@@ -27,6 +27,7 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.action.execution.ActionExecutionResponseProcessor;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionResponseProcessorException;
 import org.wso2.carbon.identity.action.execution.model.*;
+import org.wso2.carbon.identity.action.execution.model.Error;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatingUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.UserClaim;
@@ -52,7 +53,7 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
     }
 
     @Override
-    public ActionExecutionStatus processSuccessResponse(Map<String, Object> eventContext, Event event,
+    public ActionExecutionStatus<Success> processSuccessResponse(Map<String, Object> eventContext, Event event,
                                                         ActionInvocationSuccessResponse actionInvocationSuccessResponse)
             throws ActionExecutionResponseProcessorException {
 
@@ -86,16 +87,16 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
             logOperationExecutionResults(getSupportedActionType(),
                     new ArrayList<>(authenticatedUserBuilder.getOperationExecutionResult().values()));
         }
-        return new ActionExecutionStatus(ActionExecutionStatus.Status.SUCCESS, eventContext);
+        return new SuccessStatus.Builder().setResponseContext(eventContext).build();
     }
 
-    private ActionExecutionStatus handleRedirection(List<PerformableOperation> operationsToPerform,
+    private ActionExecutionStatus<Success> handleRedirection(List<PerformableOperation> operationsToPerform,
                                                     Map<String, Object> eventContext ) {
 
         for (PerformableOperation operation : operationsToPerform) {
             if (Operation.REDIRECT.getValue().equals(operation.getOp())) {
                 eventContext.put(AuthenticatorAdapterConstants.REDIRECTION_URL, operation.getValue());
-                return new ActionExecutionStatus(ActionExecutionStatus.Status.INCOMPLETE, eventContext);
+                new SuccessStatus.Builder().setResponseContext(eventContext).build();
             }
         }
 
@@ -103,12 +104,13 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
     }
 
     @Override
-    public ActionExecutionStatus processFailureResponse(Map<String, Object> eventContext,
+    public ActionExecutionStatus<Failure> processFailureResponse(Map<String, Object> eventContext,
                                                       Event actionEvent,
                                                       ActionInvocationFailureResponse failureResponse) throws
             ActionExecutionResponseProcessorException {
 
-        return new ActionExecutionStatus(ActionExecutionStatus.Status.FAILED, eventContext);
+        return new FailedStatus(new Failure(failureResponse.getFailureReason(),
+                failureResponse.getFailureDescription()));
     }
 
     private void logOperationExecutionResults(ActionType actionType,
@@ -130,12 +132,12 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
     }
 
     @Override
-    public ActionExecutionStatus processErrorResponse(Map<String, Object> eventContext,
-                                                      Event actionEvent,
-                                                      ActionInvocationErrorResponse errorResponse) throws
+    public ActionExecutionStatus<Error> processErrorResponse(Map<String, Object> eventContext,
+                                                             Event actionEvent,
+                                                             ActionInvocationErrorResponse errorResponse) throws
             ActionExecutionResponseProcessorException {
 
-        return new ActionExecutionStatus(ActionExecutionStatus.Status.ERROR, eventContext);
+        return new ErrorStatus(new Error(errorResponse.getErrorMessage(), errorResponse.getErrorDescription()));
     }
 
     /**

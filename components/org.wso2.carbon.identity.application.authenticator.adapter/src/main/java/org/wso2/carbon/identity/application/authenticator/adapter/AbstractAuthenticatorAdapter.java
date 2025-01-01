@@ -55,12 +55,6 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     }
 
     @Override
-    public IdentityConstants.DefinedByType getDefinedByType() {
-
-        return IdentityConstants.DefinedByType.USER;
-    }
-
-    @Override
     public AuthenticatorFlowStatus process(HttpServletRequest request, HttpServletResponse response,
                                            AuthenticationContext context)
             throws AuthenticationFailedException {
@@ -97,7 +91,7 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
         try {
             ActionExecutionStatus executionStatus =
                     AuthenticatorAdapterDataHolder.getInstance().getActionExecutorService()
-                            .execute(ActionType.PRE_ISSUE_ACCESS_TOKEN, eventContext, tenantDomain);
+                            .execute(ActionType.AUTHENTICATION, eventContext, tenantDomain);
             if (log.isDebugEnabled()) {
                 log.debug(String.format(
                         "Invoked authentication action for Authentication flow ID: %s. Status: %s",

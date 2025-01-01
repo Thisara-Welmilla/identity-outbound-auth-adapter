@@ -25,7 +25,6 @@ public class AuthenticatorAdapterConstants {
 
     public static final String AUTHENTICATOR_NAME = "AbstractAuthenticatorAdapter";
     public static final String AUTHENTICATOR_FRIENDLY_NAME = "externalAuthenticator";
-    public static final String[] TAG = new String[] {"external", "custom"};
     public static final String WSO2_CLAIM_DIALECT = "http://wso2.org/claims";
     public static final String AUTH_REQUEST = "authenticationRequest";
     public static final String AUTH_CONTEXT = "authContext";
@@ -33,6 +32,8 @@ public class AuthenticatorAdapterConstants {
     public static final String ACTION_ID_CONFIG = "ActionId";
     public static final String AUTH_USER_TYPE = "authUserType";
     public static final String REDIRECTION_URL = "redirectionURL";
+    public static final String LOCAL_IDP = "LOCAL";
+    public static final String FED_IDP = "FEDERATED";
 
     /**
      * This holds the paths of the entities in the payload that communicate with the external authentication service.

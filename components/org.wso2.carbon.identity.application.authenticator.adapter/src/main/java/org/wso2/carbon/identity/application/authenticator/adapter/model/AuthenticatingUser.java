@@ -52,6 +52,11 @@ public class AuthenticatingUser extends User {
 
         super(id);
         sub = user.getAuthenticatedSubjectIdentifier();
+        if (user.isFederatedUser()) {
+            idp = AuthenticatorAdapterConstants.FED_IDP;
+        } else {
+            idp = AuthenticatorAdapterConstants.LOCAL_IDP;
+        }
 
         Map<ClaimMapping, String> userAttributes = user.getUserAttributes();
         if (userAttributes != null) {

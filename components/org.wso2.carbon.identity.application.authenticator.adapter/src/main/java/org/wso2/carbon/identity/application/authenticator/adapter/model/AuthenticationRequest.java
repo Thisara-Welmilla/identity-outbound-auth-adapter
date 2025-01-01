@@ -18,19 +18,18 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.model;
 
+import org.wso2.carbon.identity.action.execution.model.Header;
+import org.wso2.carbon.identity.action.execution.model.Param;
 import org.wso2.carbon.identity.action.execution.model.Request;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This class holds the authentication request object which is communicated to the external authentication service.
  */
 public class AuthenticationRequest extends Request {
 
-    public AuthenticationRequest(Map<String, String[]> additionalHeaders, Map<String, String[]> additionalParams) {
+    public AuthenticationRequest(List<Header> additionalHeaders, List<Param> additionalParams) {
 
         this.additionalHeaders = additionalHeaders;
         this.additionalParams  = additionalParams;

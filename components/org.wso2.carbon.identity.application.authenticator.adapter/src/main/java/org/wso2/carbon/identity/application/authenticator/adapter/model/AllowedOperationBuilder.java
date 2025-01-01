@@ -20,10 +20,9 @@ package org.wso2.carbon.identity.application.authenticator.adapter.model;
 
 import org.wso2.carbon.identity.action.execution.model.AllowedOperation;
 import org.wso2.carbon.identity.action.execution.model.Operation;
-import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticatorAdapterConstants;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,22 +31,11 @@ import java.util.List;
  */
 public class AllowedOperationBuilder {
 
-    private final AllowedOperation replaceOperations;
     private final AllowedOperation redirectOperations;
 
     public AllowedOperationBuilder() {
 
-        replaceOperations = replaceOperations();
         redirectOperations = redirectOperations();
-    }
-
-    private AllowedOperation replaceOperations() {
-
-        List<String> pathsAllowedToReplaced =  new ArrayList<>();
-        pathsAllowedToReplaced.add(AuthenticatorAdapterConstants.AuthRequestEntityPaths.USER_PATH);
-        pathsAllowedToReplaced.add(AuthenticatorAdapterConstants.AuthRequestEntityPaths.USER_STORE_NAME_PATH);
-
-        return createAllowedOperation(Operation.REPLACE, pathsAllowedToReplaced);
     }
 
     private AllowedOperation redirectOperations() {
@@ -72,6 +60,6 @@ public class AllowedOperationBuilder {
      */
     public List<AllowedOperation> getAllowedOperations() {
 
-        return Arrays.asList(replaceOperations, redirectOperations);
+        return Collections.singletonList(redirectOperations);
     }
 }

@@ -18,12 +18,7 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.model;
 
-import org.wso2.carbon.identity.action.execution.model.Event;
-import org.wso2.carbon.identity.action.execution.model.Organization;
-import org.wso2.carbon.identity.action.execution.model.Request;
-import org.wso2.carbon.identity.action.execution.model.Tenant;
-import org.wso2.carbon.identity.action.execution.model.User;
-import org.wso2.carbon.identity.action.execution.model.UserStore;
+import org.wso2.carbon.identity.action.execution.model.*;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
 
 /**
@@ -32,15 +27,29 @@ import org.wso2.carbon.identity.application.authentication.framework.context.Aut
  */
 public class AuthenticationRequestEvent extends Event {
 
+    private int currentStepIndex;
+    private AuthenticatedStep[] authenticatedSteps;
+
     private AuthenticationRequestEvent(Builder builder) {
 
-        int currentStepIndex = builder.currentStepIndex;
-        AuthenticationRequestEvent.AuthenticatedStep[] authenticatedSteps = builder.authenticatedSteps;
+        this.currentStepIndex = builder.currentStepIndex;
+        this.authenticatedSteps = builder.authenticatedSteps;
         this.request = builder.request;
         this.organization = builder.organization;
         this.tenant = builder.tenant;
         this.user = builder.user;
         this.userStore = builder.userStore;
+        this.application = builder.application;
+    }
+
+    public int getCurrentStepIndex() {
+
+        return currentStepIndex;
+    }
+
+    public AuthenticatedStep[] getAuthenticatedSteps() {
+
+        return authenticatedSteps;
     }
 
     /**
@@ -55,6 +64,7 @@ public class AuthenticationRequestEvent extends Event {
         private Tenant tenant;
         private User user;
         private UserStore userStore;
+        private Application application;
 
         public Builder currentStepIndex(int currentStep) {
 
@@ -95,6 +105,12 @@ public class AuthenticationRequestEvent extends Event {
         public Builder userStore(UserStore userStore) {
 
             this.userStore = userStore;
+            return this;
+        }
+
+        public Builder application(Application application) {
+
+            this.application = application;
             return this;
         }
 

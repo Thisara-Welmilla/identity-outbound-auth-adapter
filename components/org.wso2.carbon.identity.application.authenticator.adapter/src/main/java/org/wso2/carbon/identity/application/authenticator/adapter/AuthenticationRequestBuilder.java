@@ -22,14 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.action.execution.ActionExecutionRequestBuilder;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionRequestBuilderException;
-import org.wso2.carbon.identity.action.execution.model.ActionExecutionRequest;
-import org.wso2.carbon.identity.action.execution.model.ActionType;
-import org.wso2.carbon.identity.action.execution.model.Event;
-import org.wso2.carbon.identity.action.execution.model.Request;
-import org.wso2.carbon.identity.action.execution.model.Tenant;
-import org.wso2.carbon.identity.action.execution.model.UserStore;
-import org.wso2.carbon.identity.action.execution.model.User;
-import org.wso2.carbon.identity.action.execution.model.Organization;
+import org.wso2.carbon.identity.action.execution.model.*;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.UserIdNotFoundException;
@@ -46,7 +39,7 @@ import org.wso2.carbon.identity.organization.management.service.exception.Organi
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -60,7 +53,7 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
     @Override
     public ActionType getSupportedActionType() {
 
-        return ActionType.PRE_ISSUE_ACCESS_TOKEN;
+        return ActionType.AUTHENTICATION;
     }
 
     @Override
@@ -94,6 +87,8 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
             eventBuilder.organization(getOrganizationForEventBuilder(lastAuthenticatedUser));
             eventBuilder.userStore(new UserStore(lastAuthenticatedUser.getUserStoreDomain()));
         }
+        eventBuilder.application(new Application(context.getServiceProviderResourceId(),
+                context.getServiceProviderName()));
         eventBuilder.currentStepIndex(context.getCurrentStep());
         eventBuilder.authenticatedSteps(getAuthenticatedStepsForEventBuilder(context));
         eventBuilder.request(getRequest(request));
@@ -143,19 +138,21 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
 
     private Request getRequest(HttpServletRequest request) {
 
-        Map<String, String[]> additionalHeaders = new HashMap<>();
-        Map<String, String[]> additionalParams = new HashMap<>();
+        List<Header> additionalHeaders = new ArrayList<>();
+        List<Param> additionalParams = new ArrayList<>();
 
         Enumeration<String> headers = request.getHeaderNames();
         while (headers.hasMoreElements()) {
-            String header = headers.nextElement();
-            additionalHeaders.put(header, new String[]{request.getHeader(header)});
+            String headerElement = headers.nextElement();
+            Header header = new Header(headerElement, new String[]{request.getHeader(headerElement)});
+            additionalHeaders.add(header);
         }
 
         Enumeration<String> requestParameters = request.getParameterNames();
         while (requestParameters.hasMoreElements()) {
-            String parameter = requestParameters.nextElement();
-            additionalParams.put(parameter, new String[]{request.getParameter(parameter)});
+            String paramElement = requestParameters.nextElement();
+            Param param = new Param(paramElement, new String[]{request.getParameter(paramElement)});
+            additionalParams.add(param);
         }
 
         return new AuthenticationRequest(additionalHeaders,additionalParams);
