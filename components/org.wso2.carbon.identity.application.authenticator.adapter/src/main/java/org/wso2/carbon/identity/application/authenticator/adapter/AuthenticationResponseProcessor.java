@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -18,23 +18,36 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.action.execution.ActionExecutionResponseProcessor;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionResponseProcessorException;
-import org.wso2.carbon.identity.action.execution.model.*;
+import org.wso2.carbon.identity.action.execution.model.ActionType;
+import org.wso2.carbon.identity.action.execution.model.ActionExecutionStatus;
+import org.wso2.carbon.identity.action.execution.model.ActionInvocationErrorResponse;
+import org.wso2.carbon.identity.action.execution.model.ActionInvocationFailureResponse;
+import org.wso2.carbon.identity.action.execution.model.ActionInvocationIncompleteResponse;
+import org.wso2.carbon.identity.action.execution.model.ActionInvocationSuccessResponse;
 import org.wso2.carbon.identity.action.execution.model.Error;
+import org.wso2.carbon.identity.action.execution.model.ErrorStatus;
+import org.wso2.carbon.identity.action.execution.model.Event;
+import org.wso2.carbon.identity.action.execution.model.FailedStatus;
+import org.wso2.carbon.identity.action.execution.model.Failure;
+import org.wso2.carbon.identity.action.execution.model.Incomplete;
+import org.wso2.carbon.identity.action.execution.model.IncompleteStatus;
+import org.wso2.carbon.identity.action.execution.model.Operation;
+import org.wso2.carbon.identity.action.execution.model.PerformableOperation;
+import org.wso2.carbon.identity.action.execution.model.Success;
+import org.wso2.carbon.identity.action.execution.model.SuccessStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatingUser;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.UserClaim;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.OperationExecutionResult;
+import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthActionInvocationSuccessResponse;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedUserBuilder;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -54,53 +67,68 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
 
     @Override
     public ActionExecutionStatus<Success> processSuccessResponse(Map<String, Object> eventContext, Event event,
-                                                        ActionInvocationSuccessResponse actionInvocationSuccessResponse)
+                                                                 ActionInvocationSuccessResponse actionInvocationSuccessResponse)
             throws ActionExecutionResponseProcessorException {
 
         AuthenticationContext context = (AuthenticationContext) eventContext.get(
                 AuthenticatorAdapterConstants.AUTH_CONTEXT);
-        ActionInvocationResponse.Status actionStatus = actionInvocationSuccessResponse.getActionStatus();
-        Map<String, OperationExecutionResult> operationExecutionResults = new HashMap<>();
-        AuthenticatedUserBuilder authenticatedUserBuilder = new AuthenticatedUserBuilder();
 
-        List<PerformableOperation> operationsToPerform = actionInvocationSuccessResponse.getOperations();
-        try {
-            AuthenticatingUser authenticatingUser = new AuthenticatingUser(StringUtils.EMPTY);
-            UserStore userStore = new UserStore(StringUtils.EMPTY);
-            if (operationsToPerform != null) {
+        AuthActionInvocationSuccessResponse response =
+                (AuthActionInvocationSuccessResponse) actionInvocationSuccessResponse;
 
-                // Check whether any of operation have redirection. If so return execution state as INCOMPLETE.
-                ActionExecutionStatus status = handleRedirection(operationsToPerform, eventContext);
-                if (status != null) {
-                    return status;
-                }
+        AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(response.getAuthenticatedUserData(), context)
+                .buildAuthenticateduser();
+        context.setSubject(authenticatedUser);
 
-                for (PerformableOperation operation : operationsToPerform) {
-                    performOperation(operation, authenticatingUser, userStore, operationExecutionResults);
-                }
-            }
-            authenticatedUserBuilder.setAuthenticatingUser(authenticatingUser);
-            authenticatedUserBuilder.setOperationExecutionResult(operationExecutionResults);
-            context.setSubject(authenticatedUserBuilder.createAuthenticateduser(
-                    authenticatingUser, context, userStore));
-        } finally {
-            logOperationExecutionResults(getSupportedActionType(),
-                    new ArrayList<>(authenticatedUserBuilder.getOperationExecutionResult().values()));
-        }
         return new SuccessStatus.Builder().setResponseContext(eventContext).build();
     }
 
-    private ActionExecutionStatus<Success> handleRedirection(List<PerformableOperation> operationsToPerform,
-                                                    Map<String, Object> eventContext ) {
+    @Override
+    public ActionExecutionStatus<Incomplete> processIncompleteResponse(Map<String, Object> eventContext, Event event,
+            ActionInvocationIncompleteResponse actionInvocationIncompleteResponse)
+            throws ActionExecutionResponseProcessorException {
 
-        for (PerformableOperation operation : operationsToPerform) {
-            if (Operation.REDIRECT.getValue().equals(operation.getOp())) {
-                eventContext.put(AuthenticatorAdapterConstants.REDIRECTION_URL, operation.getValue());
-                new SuccessStatus.Builder().setResponseContext(eventContext).build();
-            }
+        HttpServletResponse response = (HttpServletResponse) eventContext.get(AuthenticatorAdapterConstants.AUTH_RESPONSE);
+
+        List<PerformableOperation> operationsToPerform = actionInvocationIncompleteResponse.getOperations();
+        validateOperationForIncompleteStatus(operationsToPerform);
+
+        String url = operationsToPerform.get(0).getUrl();
+        try {
+            response.sendRedirect(operationsToPerform.get(0).getUrl());
+            return new IncompleteStatus.Builder().responseContext(eventContext).build();
+        } catch (IOException e) {
+            throw new ActionExecutionResponseProcessorException(String.format(
+                    "Error while redirecting to the URL: %s", url ), e);
+        }
+    }
+
+    private void validateOperationForIncompleteStatus(List<PerformableOperation> operationsToPerform)
+            throws ActionExecutionResponseProcessorException {
+
+        if (operationsToPerform == null) {
+            throw new ActionExecutionResponseProcessorException(String.format("The list of performable operations is " +
+                    "empty. For the INCOMPLETE action invocation status, there must be a REDIRECTION operation defined " +
+                    "for the %s action type.", getSupportedActionType()));
         }
 
-        return null;
+        if (operationsToPerform.size() != 1) {
+            throw new ActionExecutionResponseProcessorException(String.format("The list of performable operations " +
+                    "must contain only one operation for the INCOMPLETE action invocation status for the %s " +
+                    "action type.", getSupportedActionType()));
+        }
+
+        if (!Operation.REDIRECT.equals(operationsToPerform.get(0).getOp())) {
+            throw new ActionExecutionResponseProcessorException(String.format("The operation defined for the " +
+                    "INCOMPLETE action invocation status must be a REDIRECTION operation for the %s action type.",
+                    getSupportedActionType()));
+        }
+
+        if (operationsToPerform.get(0).getUrl() == null) {
+            throw new ActionExecutionResponseProcessorException(String.format("The REDIRECTION operation defined " +
+                    "for the INCOMPLETE action invocation status must have a valid URL for the %s action type.",
+                    getSupportedActionType()));
+        }
     }
 
     @Override
@@ -113,24 +141,6 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
                 failureResponse.getFailureDescription()));
     }
 
-    private void logOperationExecutionResults(ActionType actionType,
-                                              List<OperationExecutionResult> operationExecutionResultList) {
-
-        //TODO: need to add to diagnostic logs
-        if (LOG.isDebugEnabled()) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-            objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-            try {
-                String executionSummary = objectMapper.writeValueAsString(operationExecutionResultList);
-                LOG.debug(String.format("Processed response for action type: %s. Results of operations performed: %s",
-                        actionType, executionSummary));
-            } catch (JsonProcessingException e) {
-                LOG.debug("Error occurred while logging operation execution results.", e);
-            }
-        }
-    }
-
     @Override
     public ActionExecutionStatus<Error> processErrorResponse(Map<String, Object> eventContext,
                                                              Event actionEvent,
@@ -138,97 +148,6 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
             ActionExecutionResponseProcessorException {
 
         return new ErrorStatus(new Error(errorResponse.getErrorMessage(), errorResponse.getErrorDescription()));
-    }
-
-    /**
-     * Validate the given performableOperation and apply it to the user attribute.
-     *
-     * @param performableOperation  PerformableOperation from the external authentication service response.
-     */
-    private void performOperation(PerformableOperation performableOperation, AuthenticatingUser authRequestUser,
-                        UserStore userStoreDomain, Map<String, OperationExecutionResult> operationExecutionResults)
-                        throws ActionExecutionResponseProcessorException {
-
-        String operationPath = performableOperation.getPath();
-        try {
-            switch (operationPath) {
-                case AuthenticatorAdapterConstants.AuthRequestEntityPaths.USER_ID_PATH:
-                    authRequestUser.setId(castToString(performableOperation.getValue()));
-                    operationExecutionResults.put(operationPath, new OperationExecutionResult(performableOperation));
-                    break;
-                case AuthenticatorAdapterConstants.AuthRequestEntityPaths.EXTERNAL_ID_PATH:
-                    authRequestUser.setExternalId(castToString(performableOperation.getValue()));
-                    operationExecutionResults.put(operationPath, new OperationExecutionResult(performableOperation));
-                    break;
-                case AuthenticatorAdapterConstants.AuthRequestEntityPaths.IDP_PATH:
-                    authRequestUser.setIdp(castToString(performableOperation.getValue()));
-                    operationExecutionResults.put(operationPath, new OperationExecutionResult(performableOperation));
-                    break;
-                case AuthenticatorAdapterConstants.AuthRequestEntityPaths.SUB_PATH:
-                    authRequestUser.setSub(castToString(performableOperation.getValue()));
-                    operationExecutionResults.put(operationPath, new OperationExecutionResult(performableOperation));
-                    break;
-                case AuthenticatorAdapterConstants.AuthRequestEntityPaths.USER_CLAIM_PATH:
-                    UserClaim userClaim = castToClaim(performableOperation.getValue());
-                    if (userClaim != null) {
-                        authRequestUser.setUserClaims(userClaim);
-                        operationExecutionResults.put(operationPath,
-                                new OperationExecutionResult(performableOperation));
-                    } else {
-                        operationExecutionResults.put(operationPath, new OperationExecutionResult(performableOperation,
-                                OperationExecutionResult.Status.IGNORE, "Claim is ignored and will not set to " +
-                                    "the authentication context as it is not in accepted format"));
-                    }
-                    break;
-                case AuthenticatorAdapterConstants.AuthRequestEntityPaths.USER_STORE_NAME_PATH:
-                    userStoreDomain.setName(castToString(performableOperation.getValue()));
-                    operationExecutionResults.put(operationPath, new OperationExecutionResult(performableOperation));
-                    break;
-                default:
-                    operationExecutionResults.put(operationPath, new OperationExecutionResult(performableOperation));
-                    break;
-            }
-        } catch (ActionExecutionResponseProcessorException e) {
-            OperationExecutionResult result = new OperationExecutionResult(performableOperation,
-                    OperationExecutionResult.Status.FAILURE,
-                    "The input is not in valid format, unable to cast to String: " + performableOperation.getValue() );
-            operationExecutionResults.put(operationPath, result);
-            throw e;
-        }
-    }
-
-    /**
-     * Cast the given object to String.
-     *
-     * @param object    Object that need to cast.
-     * @return String which cast to the String class.
-     * @throws ActionExecutionResponseProcessorException If object cannot be cast to String.
-     */
-    private String castToString(Object object)
-            throws ActionExecutionResponseProcessorException {
-
-        try {
-            return objectMapper.convertValue(object, String.class);
-        } catch (IllegalArgumentException e) {
-            throw new ActionExecutionResponseProcessorException("The provided value cannot be cast to a string:" +
-                    object, e);
-        }
-    }
-
-    /**
-     * Cast the given object to a claim.
-     *
-     * @param object    Object that need to cast.
-     * @return userClaim which casted to the UserClaim class.
-     */
-    private UserClaim castToClaim(Object object) {
-
-        try {
-            return objectMapper.convertValue(object, UserClaim.class);
-        } catch (IllegalArgumentException e) {
-            // Not throwing an error and ignore as this is just a claim.
-            return null;
-        }
     }
 }
 

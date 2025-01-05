@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
@@ -25,18 +27,39 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionRequestBuilderException;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionResponseProcessorException;
-import org.wso2.carbon.identity.action.execution.model.*;
+import org.wso2.carbon.identity.action.execution.model.ActionExecutionRequest;
+import org.wso2.carbon.identity.action.execution.model.ActionExecutionStatus;
+import org.wso2.carbon.identity.action.execution.model.ActionInvocationErrorResponse;
+import org.wso2.carbon.identity.action.execution.model.ActionInvocationFailureResponse;
+import org.wso2.carbon.identity.action.execution.model.ActionInvocationSuccessResponse;
+import org.wso2.carbon.identity.action.execution.model.ActionType;
 import org.wso2.carbon.identity.action.execution.model.Error;
+import org.wso2.carbon.identity.action.execution.model.Failure;
+import org.wso2.carbon.identity.action.execution.model.Operation;
+import org.wso2.carbon.identity.action.execution.model.PerformableOperation;
+import org.wso2.carbon.identity.action.execution.model.Success;
+import org.wso2.carbon.identity.action.execution.model.UserStore;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
+import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
+import org.wso2.carbon.identity.application.authentication.framework.exception.UserIdNotFoundException;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.UserClaim;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.ActionInvocationResponseBuilder;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.ActionInvocationResponseBuilder.ExternallyAuthenticatedUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedTestUserBuilder;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.EventContextBuilder;
 import org.wso2.carbon.identity.common.testng.WithCarbonHome;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
+import org.wso2.carbon.user.core.service.RealmService;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.wso2.carbon.base.MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
 
@@ -50,10 +73,12 @@ public class AuthenticationResponseProcessorTest {
 
     private static final String TENANT_DOMAIN_TEST = "carbon.super";
     private static final int TENANT_ID_TEST = -1234;
-    private static final String FLOW_ID = "flow-id";
-    Map<String, String> headers = Map.of("header-1", "value-1", "header-2", "value-2");
-    Map<String, String> parameters = Map.of("param-1", "value-1", "param-2", "value-2");
-    ArrayList<AuthHistory> authHistory;
+    private static final Map<String, String> headers = Map.of("header-1", "value-1", "header-2", "value-2");
+    private static final Map<String, String> parameters = Map.of("param-1", "value-1", "param-2", "value-2");
+    private static ArrayList<AuthHistory> authHistory;
+
+    @Mock
+    private RealmService realmService;
 
     @BeforeClass
     public void setUp() throws ActionExecutionRequestBuilderException {
@@ -65,13 +90,15 @@ public class AuthenticationResponseProcessorTest {
         identityTenantUtilMockedStatic.when(() -> IdentityTenantUtil.getTenantId(TENANT_DOMAIN_TEST))
                 .thenReturn(TENANT_ID_TEST);
 
+        realmService = mock(RealmService.class);
+        AuthenticatorAdapterDataHolder.getInstance().setRealmService(realmService);
+
         // Custom authenticator engaging in 2nd step of authentication flow with Local authenticated user.
         AuthenticatedUser localUser = AuthenticatedTestUserBuilder.createAuthenticatedUser(
                 AuthenticatedTestUserBuilder.AuthenticatedUserConstants.LOCAL_USER_PREFIX, SUPER_TENANT_DOMAIN_NAME);
         eventContextForLocalUser = new EventContextBuilder(
-                FLOW_ID, localUser, SUPER_TENANT_DOMAIN_NAME, headers, parameters, authHistory)
+                localUser, SUPER_TENANT_DOMAIN_NAME, headers, parameters, authHistory)
                 .getEventContext();
-
         authenticationRequest = new AuthenticationRequestBuilder().buildActionExecutionRequest(eventContextForLocalUser);
     }
 
@@ -81,13 +108,109 @@ public class AuthenticationResponseProcessorTest {
         Assert.assertEquals(authenticationResponseProcessor.getSupportedActionType(), ActionType.AUTHENTICATION);
     }
 
+    @DataProvider
+    public Object[][] getSuccessResponse() throws JsonProcessingException {
+
+        ExternallyAuthenticatedUser authenticatedUser = new ExternallyAuthenticatedUser();
+        authenticatedUser.setUserStore(new UserStore("PRIMARY"));
+        ActionInvocationSuccessResponse authSuccessResponse = ActionInvocationResponseBuilder
+                .buildAuthenticationSuccessResponse(new ArrayList<>(), authenticatedUser.covertJsonString());
+
+        return new Object[][] {
+                {eventContextForLocalUser, authenticationRequest, authSuccessResponse, authenticatedUser}
+        };
+    }
+
+    //@Test(dataProvider = "getSuccessResponse")
+    public void testProcessSuccessResponse(Map<String, Object> eventContext, ActionExecutionRequest authRequest,
+            ActionInvocationSuccessResponse successResponse, ExternallyAuthenticatedUser expectedUser)
+            throws ActionExecutionResponseProcessorException, UserIdNotFoundException {
+
+        ActionExecutionStatus<Success> executionStatus = authenticationResponseProcessor.processSuccessResponse(
+                eventContext, authRequest.getEvent(), successResponse);
+
+        Assert.assertEquals(executionStatus.getStatus(), ActionExecutionStatus.Status.SUCCESS);
+        assertAuthenticationContext(eventContext, expectedUser);
+    }
+
+    @DataProvider
+    public Object[][] getSuccessStatusResponseForProcessorExceptions() throws JsonProcessingException {
+
+        ExternallyAuthenticatedUser authenticatedUser = new ExternallyAuthenticatedUser();
+
+        // Authenticator success response with no data.
+        ActionInvocationSuccessResponse authResponseWithNoData =
+                ActionInvocationResponseBuilder.buildAuthenticationSuccessResponse(new ArrayList<>(), null);
+
+        // Authenticator success response with operations.
+        ActionInvocationSuccessResponse authResponseWithOperation =
+                ActionInvocationResponseBuilder.buildAuthenticationSuccessResponse(
+                        new ArrayList<>(buildRedirectPerformableOperation("https://dummy-url")),
+                        authenticatedUser.covertJsonString());
+
+        // Authenticator success response with no user id in user data
+        authenticatedUser.setId(null);
+        String dataWithNoUserId = authenticatedUser.covertJsonString();
+        ActionInvocationSuccessResponse authResponseWithNoUserId = ActionInvocationResponseBuilder
+                .buildAuthenticationSuccessResponse(new ArrayList<>(), dataWithNoUserId);
+
+        // Authenticator success response with invalid user claims in user data
+        String dataWithInvalidClaims = new ExternallyAuthenticatedUser().covertJsonString()
+                .replace("\"name\":\"claim-1\",", "");
+        ActionInvocationSuccessResponse authResponseWithInvalidClaims = ActionInvocationResponseBuilder
+                .buildAuthenticationSuccessResponse(new ArrayList<>(), dataWithInvalidClaims);
+
+        return new Object[][] {
+                {eventContextForLocalUser, authenticationRequest, authResponseWithNoData, "The data field in the " +
+                        "SUCCESS action invocation status must not be empty for the AUTHENTICATION action type."},
+                {eventContextForLocalUser, authenticationRequest, authResponseWithOperation, "The list of performable " +
+                        "operations must be empty for the SUCCESS action invocation status for the AUTHENTICATION " +
+                        "action type."},
+                {eventContextForLocalUser, authenticationRequest, authResponseWithNoUserId,
+                        "User Id is not found in the authenticated user data."},
+                {eventContextForLocalUser, authenticationRequest, authResponseWithInvalidClaims, "The provided data " +
+                        "cannot be cast to an AuthenticatedUserData object:" + dataWithInvalidClaims}
+        };
+    }
+
+    @Test(dataProvider = "getSuccessStatusResponseForProcessorExceptions")
+    public void testProcessSuccessResponseWithProcessorExceptions(Map<String, Object> eventContext,
+            ActionExecutionRequest authRequest, ActionInvocationSuccessResponse successResponse,
+            String expectedErrorMessage) {
+
+        ActionExecutionResponseProcessorException error = assertThrows(ActionExecutionResponseProcessorException.class,
+                () -> authenticationResponseProcessor.processSuccessResponse(
+                        eventContext, authRequest.getEvent(), successResponse));
+        Assert.assertEquals(error.getMessage(), expectedErrorMessage);
+    }
+
+    private void assertAuthenticationContext(Map<String, Object> eventContext,
+                                             ExternallyAuthenticatedUser expectedUser) throws UserIdNotFoundException {
+
+        Object context = eventContext.get(AuthenticatorAdapterConstants.AUTH_CONTEXT);
+        Assert.assertNotNull(context);
+        Assert.assertTrue(context instanceof AuthenticationContext);
+        AuthenticationContext authContext = (AuthenticationContext) context;
+        assertAuthenticatedUser(authContext.getLastAuthenticatedUser(), expectedUser);
+
+        // assert other values are not changed.
+    }
+
+    private void assertAuthenticatedUser(AuthenticatedUser authenticatedUser, ExternallyAuthenticatedUser expectedUser)
+            throws UserIdNotFoundException {
+
+        Assert.assertNotNull(authenticatedUser);
+        Assert.assertEquals(authenticatedUser.getUserId(), expectedUser.getId());
+        for (UserClaim claim : expectedUser.getClaims()) {
+            //Assert.assertEquals(authenticatedUser.getUserAttributes().get(claim.getName()), claim.getValue());
+        }
+    }
+
     @Test
     public void testProcessFailedResponse()
             throws ActionExecutionResponseProcessorException {
-        ActionInvocationFailureResponse failureResponse = new ActionInvocationFailureResponse.Builder()
-                .actionStatus(ActionInvocationResponse.Status.FAILED)
-                .failureReason("failure-1")
-                .failureDescription("failure description").build();
+        ActionInvocationFailureResponse failureResponse =
+                ActionInvocationResponseBuilder.buildActionInvocationFailureResponse();
 
         ActionExecutionStatus<Failure> executionStatus = authenticationResponseProcessor.processFailureResponse(
                 eventContextForLocalUser, authenticationRequest.getEvent(), failureResponse);
@@ -101,10 +224,8 @@ public class AuthenticationResponseProcessorTest {
     @Test
     public void testProcessErrorResponse()
             throws ActionExecutionResponseProcessorException {
-        ActionInvocationErrorResponse errorResponse = new ActionInvocationErrorResponse.Builder()
-                .actionStatus(ActionInvocationResponse.Status.ERROR)
-                .errorMessage("error-1")
-                .errorDescription("error description").build();
+        ActionInvocationErrorResponse errorResponse =
+                ActionInvocationResponseBuilder.buildActionInvocationErrorResponse();
 
         ActionExecutionStatus<Error> executionStatus = authenticationResponseProcessor.processErrorResponse(
                 eventContextForLocalUser, authenticationRequest.getEvent(), errorResponse);
@@ -112,5 +233,14 @@ public class AuthenticationResponseProcessorTest {
         Assert.assertEquals(executionStatus.getStatus(), ActionExecutionStatus.Status.ERROR);
         Assert.assertEquals(executionStatus.getResponse().getErrorMessage(), errorResponse.getErrorMessage());
         Assert.assertEquals(executionStatus.getResponse().getErrorDescription(), errorResponse.getErrorDescription());
+    }
+
+    public static List<PerformableOperation> buildRedirectPerformableOperation(String redirectUrl) {
+
+        PerformableOperation operation = new PerformableOperation();
+        operation.setOp(Operation.REDIRECT);
+        operation.setUrl(redirectUrl);
+
+        return new ArrayList<>(List.of(operation));
     }
 }

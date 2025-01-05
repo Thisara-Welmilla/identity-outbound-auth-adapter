@@ -1,4 +1,4 @@
- /*
+/*
  * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
@@ -21,7 +21,6 @@ package org.wso2.carbon.identity.application.authenticator.adapter.util;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
-import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticatorAdapterConstants;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
@@ -38,24 +37,22 @@ public class EventContextBuilder {
     Map<String, Object> eventContext = new HashMap<>();
     public static final String SP_ID = "spId";
     public static final String SP_NAME = "spName";
-
+    public static final String FLOW_ID = "flow-id";
 
     /**
      * Constructor for EventContextBuilder.
      *
-     * @param flowId            Flow ID.
      * @param authenticatedUser Authenticated user.
      * @param headers           Headers.
      * @param parameters        Parameters.
      */
-    public EventContextBuilder(String flowId, AuthenticatedUser authenticatedUser, String tenantDomain,
+    public EventContextBuilder(AuthenticatedUser authenticatedUser, String tenantDomain,
                                Map<String, String> headers, Map<String, String> parameters,
                                ArrayList<AuthHistory> authHistory) {
 
         eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, buildAuthenticationRequest(headers, parameters));
         eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, buildAuthenticationContext(authenticatedUser,
                 tenantDomain, authHistory));
-        eventContext.put(AuthenticatorAdapterConstants.FLOW_ID, flowId);
     }
 
     /**
@@ -112,6 +109,7 @@ public class EventContextBuilder {
                                                              ArrayList<AuthHistory> authHistory) {
 
         AuthenticationContext authenticationContext = new AuthenticationContext();
+        authenticationContext.setContextIdentifier(FLOW_ID);
         authenticationContext.setSubject(authenticatedUser);
         authenticationContext.setTenantDomain(tenantDomain);
         authHistory.forEach(authenticationContext::addAuthenticationStepHistory);
@@ -121,7 +119,14 @@ public class EventContextBuilder {
         return authenticationContext;
     }
 
-    private HttpServletRequest buildAuthenticationRequest(Map<String, String> headers, Map<String, String> parameters) {
+    /**
+     * Build authentication request.
+     *
+     * @param headers    Headers.
+     * @param parameters Parameters.
+     * @return HttpServletRequest.
+     */
+    public HttpServletRequest buildAuthenticationRequest(Map<String, String> headers, Map<String, String> parameters) {
 
         HttpServletRequest request = mock(HttpServletRequest.class);
         Enumeration<String> headerEnumeration = Collections.enumeration(headers.keySet());

@@ -18,45 +18,81 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter;
 
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
+import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
+import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
+import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorConfig;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 public class FederatedAuthenticatorAdapterTest {
 
-    // Data provider for process request
+    private static final String AUTHENTICATOR_NAME = "FederatedAuthenticatorAdapter";
+    private static final String FRIENDLY_NAME = "Federated Authenticator Adapter";
 
-    @Test
-    public void testSuccessAuthenticationRequestProcess() {
-        // Test process request
-    }
+    private FederatedAuthenticatorAdapter federatedAuthenticatorAdapter;
 
-    @Test
-    public void testIncompleteAuthenticationRequestProcess() {
-        // Test process request
-    }
+    @BeforeClass
+    public void setUp() {
 
-    @Test
-    public void testFailureAuthenticationRequestProcess() {
-        // Test process request
+        FederatedAuthenticatorConfig fedConfig = new FederatedAuthenticatorConfig();
+        fedConfig.setName(AUTHENTICATOR_NAME);
+        fedConfig.setDisplayName(FRIENDLY_NAME);
+        federatedAuthenticatorAdapter = new FederatedAuthenticatorAdapter(fedConfig);
     }
 
     @Test
     public void testGetFriendlyName() {
-        // Test process response
+
+        Assert.assertEquals(federatedAuthenticatorAdapter.getFriendlyName(), FRIENDLY_NAME);
     }
 
     @Test
     public void testGetName() {
-        // Test process response
+
+        Assert.assertEquals(federatedAuthenticatorAdapter.getName(), AUTHENTICATOR_NAME);
     }
 
     @Test
     public void testClaimDialectURI() {
-        // Test process response
+
+        Assert.assertEquals(federatedAuthenticatorAdapter.getClaimDialectURI(),
+                AuthenticatorAdapterConstants.WSO2_CLAIM_DIALECT);
     }
 
-    // method to mock authenticators request
-    // method to mock authenticators response
-    // method to mock authenticators context
+    @Test
+    public void testSuccessAuthenticationRequestProcess(HttpServletRequest request, HttpServletResponse response,
+                                                        AuthenticationContext context)
+            throws AuthenticationFailedException, LogoutFailedException {
 
+        AuthenticatorFlowStatus authStatus = federatedAuthenticatorAdapter.process(request, response, context);
 
+        Assert.assertEquals(authStatus, AuthenticatorFlowStatus.SUCCESS_COMPLETED);
+    }
+
+    @Test
+    public void testIncompleteAuthenticationRequestProcess(HttpServletRequest request, HttpServletResponse response,
+                                                           AuthenticationContext context)
+            throws AuthenticationFailedException, LogoutFailedException {
+
+        AuthenticatorFlowStatus authStatus = federatedAuthenticatorAdapter.process(request, response, context);
+
+        Assert.assertEquals(authStatus, AuthenticatorFlowStatus.INCOMPLETE);
+    }
+
+    @Test
+    public void testFailureAuthenticationRequestProcess(HttpServletRequest request, HttpServletResponse response,
+                                                        AuthenticationContext context)
+            throws AuthenticationFailedException, LogoutFailedException {
+
+        AuthenticatorFlowStatus authStatus = federatedAuthenticatorAdapter.process(request, response, context);
+
+        Assert.assertEquals(authStatus, AuthenticatorFlowStatus.FAIL_COMPLETED);
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -18,7 +18,13 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.model;
 
-import org.wso2.carbon.identity.action.execution.model.*;
+import org.wso2.carbon.identity.action.execution.model.Application;
+import org.wso2.carbon.identity.action.execution.model.Event;
+import org.wso2.carbon.identity.action.execution.model.Organization;
+import org.wso2.carbon.identity.action.execution.model.Request;
+import org.wso2.carbon.identity.action.execution.model.Tenant;
+import org.wso2.carbon.identity.action.execution.model.User;
+import org.wso2.carbon.identity.action.execution.model.UserStore;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
 
 /**
@@ -124,10 +130,20 @@ public class AuthenticationRequestEvent extends Event {
      * Immutable class for Authentication step object creation.
      */
     public static class AuthenticatedStep {
+        private final int index;
+        private final String name;
 
         public AuthenticatedStep(int order, AuthHistory authHistory) {
-            int index = order;
-            String name = authHistory.getAuthenticatorName();
+            index = order;
+            name = authHistory.getAuthenticatorName();
+        }
+
+        public int getIndex() {
+            return index;
+        }
+
+        public String getName() {
+            return name;
         }
     }
 }

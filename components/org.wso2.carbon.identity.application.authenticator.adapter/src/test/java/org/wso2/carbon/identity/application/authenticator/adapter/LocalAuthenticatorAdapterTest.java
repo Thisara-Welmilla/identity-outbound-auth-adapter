@@ -18,5 +18,82 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter;
 
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
+import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
+import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
+import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.application.common.model.LocalAuthenticatorConfig;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 public class LocalAuthenticatorAdapterTest {
+    
+    private static final String AUTHENTICATOR_NAME = "LocalAuthenticatorAdapter";
+    private static final String FRIENDLY_NAME = "Local Authenticator Adapter";
+
+    private LocalAuthenticatorAdapter localAuthenticatorAdapter;
+
+    @BeforeClass
+    public void setUp() {
+
+        LocalAuthenticatorConfig fedConfig = new LocalAuthenticatorConfig();
+        fedConfig.setName(AUTHENTICATOR_NAME);
+        fedConfig.setDisplayName(FRIENDLY_NAME);
+        localAuthenticatorAdapter = new LocalAuthenticatorAdapter(fedConfig);
+    }
+
+    @Test
+    public void testGetFriendlyName() {
+
+        Assert.assertEquals(localAuthenticatorAdapter.getFriendlyName(), FRIENDLY_NAME);
+    }
+
+    @Test
+    public void testGetName() {
+
+        Assert.assertEquals(localAuthenticatorAdapter.getName(), AUTHENTICATOR_NAME);
+    }
+
+    @Test
+    public void testClaimDialectURI() {
+
+        Assert.assertEquals(localAuthenticatorAdapter.getClaimDialectURI(),
+                AuthenticatorAdapterConstants.WSO2_CLAIM_DIALECT);
+    }
+
+    @Test
+    public void testSuccessAuthenticationRequestProcess(HttpServletRequest request, HttpServletResponse response,
+                                                        AuthenticationContext context)
+            throws AuthenticationFailedException, LogoutFailedException {
+
+        AuthenticatorFlowStatus authStatus = localAuthenticatorAdapter.process(request, response, context);
+
+        Assert.assertEquals(authStatus, AuthenticatorFlowStatus.SUCCESS_COMPLETED);
+    }
+
+    @Test
+    public void testIncompleteAuthenticationRequestProcess(HttpServletRequest request, HttpServletResponse response,
+                                                           AuthenticationContext context)
+            throws AuthenticationFailedException, LogoutFailedException {
+
+        AuthenticatorFlowStatus authStatus = localAuthenticatorAdapter.process(request, response, context);
+
+        Assert.assertEquals(authStatus, AuthenticatorFlowStatus.INCOMPLETE);
+    }
+
+    @Test
+    public void testFailureAuthenticationRequestProcess(HttpServletRequest request, HttpServletResponse response,
+                                                        AuthenticationContext context)
+            throws AuthenticationFailedException, LogoutFailedException {
+
+        AuthenticatorFlowStatus authStatus = localAuthenticatorAdapter.process(request, response, context);
+
+        Assert.assertEquals(authStatus, AuthenticatorFlowStatus.FAIL_COMPLETED);
+    }
 }
+

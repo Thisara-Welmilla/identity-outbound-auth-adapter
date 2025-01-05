@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -27,9 +27,11 @@ import org.wso2.carbon.identity.application.authentication.framework.AbstractApp
 import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
+import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
+import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.common.model.Property;
-import org.wso2.carbon.identity.base.IdentityConstants;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -45,41 +47,42 @@ import java.util.Optional;
 public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAuthenticator {
 
     private static final Log log = LogFactory.getLog(AbstractAuthenticatorAdapter.class);
-    protected String authenticatorName = AuthenticatorAdapterConstants.AUTHENTICATOR_NAME;
-    protected String friendlyName = AuthenticatorAdapterConstants.AUTHENTICATOR_FRIENDLY_NAME;;
+    protected String authenticatorName;
+    protected String friendlyName;
 
     @Override
     public boolean canHandle(HttpServletRequest request) {
 
-        return false;
+        return true;
     }
 
     @Override
     public AuthenticatorFlowStatus process(HttpServletRequest request, HttpServletResponse response,
                                            AuthenticationContext context)
-            throws AuthenticationFailedException {
+            throws AuthenticationFailedException, LogoutFailedException {
 
         if (context.isLogoutRequest()){
             return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
         }
 
+        context.removeProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
         Map<String, Object> eventContext = new HashMap<>();
         eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
+        eventContext.put(AuthenticatorAdapterConstants.AUTH_RESPONSE, response);
         eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, context);
-
         ActionExecutionStatus executionStatus = executeAction(context, eventContext, context.getTenantDomain());
+        context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME, executionStatus);
 
-        return resolveAuthenticatorFlowStatus(executionStatus);
-    }
-
-    private AuthenticatorFlowStatus resolveAuthenticatorFlowStatus(ActionExecutionStatus executionStatus) {
-
-        if (executionStatus.getStatus() == ActionExecutionStatus.Status.SUCCESS) {
-            return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
-        } else if (executionStatus.getStatus() == ActionExecutionStatus.Status.INCOMPLETE) {
+        if (executionStatus.getStatus() == ActionExecutionStatus.Status.INCOMPLETE) {
+            if (authenticatorName.equals(context.getProperty(FrameworkConstants.LAST_FAILED_AUTHENTICATOR))) {
+                context.setRetrying(true);
+            }
+            context.setCurrentAuthenticator(getName());
+            context.setRetrying(false);
             return AuthenticatorFlowStatus.INCOMPLETE;
         }
-        return AuthenticatorFlowStatus.FAIL_COMPLETED;
+
+        return super.process(request, response, context);
     }
 
     private ActionExecutionStatus executeAction(AuthenticationContext context, Map<String, Object> eventContext,
@@ -91,7 +94,7 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
         try {
             ActionExecutionStatus executionStatus =
                     AuthenticatorAdapterDataHolder.getInstance().getActionExecutorService()
-                            .execute(ActionType.AUTHENTICATION, eventContext, tenantDomain);
+                            .execute(ActionType.AUTHENTICATION, new String[]{actionId}, eventContext, tenantDomain);
             if (log.isDebugEnabled()) {
                 log.debug(String.format(
                         "Invoked authentication action for Authentication flow ID: %s. Status: %s",
@@ -119,35 +122,13 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     @Override
     public String getClaimDialectURI() {
 
-        return AuthenticatorAdapterConstants.WSO2_CLAIM_DIALECT ;
+        return AuthenticatorAdapterConstants.WSO2_CLAIM_DIALECT;
     }
 
     @Override
     public List<Property> getConfigurationProperties() {
 
-        List<Property> configProperties = new ArrayList<>();
-        // Reference to corresponding Action.
-        Property actionId = new Property();
-        actionId.setName(AuthenticatorAdapterConstants.ACTION_ID_CONFIG);
-        actionId.setDisplayName("Action Id");
-        actionId.setRequired(true);
-        actionId.setDescription("Enter action reference here.");
-        actionId.setType("Action");
-        actionId.setDisplayOrder(1);
-        configProperties.add(actionId);
-
-        // User type.
-        Property authUserType = new Property();
-        authUserType.setName(AuthenticatorAdapterConstants.AUTH_USER_TYPE);
-        authUserType.setDisplayName("Authenticating user type");
-        authUserType.setRequired(true);
-        authUserType.setDescription("Enter the whether authenticating user is being maintained; LOCAL, FEDERATED.");
-        authUserType.setType("String");
-        // Add regex validation.
-        authUserType.setDisplayOrder(1);
-        configProperties.add(authUserType);
-
-        return configProperties;
+        return new ArrayList<>();
     }
 
     @Override
@@ -161,7 +142,11 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     protected void processAuthenticationResponse(HttpServletRequest request, HttpServletResponse response,
                                                  AuthenticationContext context) throws AuthenticationFailedException {
 
-        throw new UnsupportedOperationException();
+        ActionExecutionStatus executionStatus = (ActionExecutionStatus)
+                context.getProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
+        if (executionStatus.getStatus() == ActionExecutionStatus.Status.FAILED) {
+            throw new AuthenticationFailedException("dwqdqwdqwdqwdq");
+        }
     }
 
     @Override
@@ -179,5 +164,10 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     public String getI18nKey() {
 
         return AuthenticatorAdapterConstants.AUTHENTICATOR_NAME;
+    }
+
+    @Override
+    protected boolean retryAuthenticationEnabled() {
+        return true;
     }
 }

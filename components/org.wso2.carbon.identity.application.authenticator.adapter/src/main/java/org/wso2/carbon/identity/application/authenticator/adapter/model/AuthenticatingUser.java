@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -19,12 +19,11 @@
 package org.wso2.carbon.identity.application.authenticator.adapter.model;
 
 import org.wso2.carbon.identity.action.execution.model.User;
+import org.wso2.carbon.identity.action.execution.model.UserClaim;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
-import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -32,20 +31,12 @@ import java.util.Map;
  */
 public class AuthenticatingUser extends User {
 
-    private String id;
     private String idp;
     private String sub;
-    private String externalId;
-    private final List<UserClaim> userClaims =  new ArrayList<>();
 
     public AuthenticatingUser(String id){
 
         super(id);
-    }
-
-    public void setId(String id) {
-
-        this.id = id;
     }
 
     public AuthenticatingUser(String id, AuthenticatedUser user) {
@@ -62,10 +53,7 @@ public class AuthenticatingUser extends User {
         if (userAttributes != null) {
             for (ClaimMapping claimMap : userAttributes.keySet()) {
                 String claimUri = claimMap.getLocalClaim().getClaimUri();
-                if (AuthenticatorAdapterConstants.AuthRequestEntityPaths.EXTERNAL_ID_CLAIM.equals(claimUri)) {
-                    externalId = userAttributes.get(claimMap);
-                }
-                userClaims.add(new UserClaim(claimUri, userAttributes.get(claimMap)));
+                getUserClaims().add(new UserClaim(claimUri, userAttributes.get(claimMap)));
             }
         }
     }
@@ -84,21 +72,5 @@ public class AuthenticatingUser extends User {
 
     public String getSub() {
         return sub;
-    }
-
-    public void setExternalId(String externalId) {
-        this.externalId = externalId;
-    }
-
-    public String getExternalId() {
-        return externalId;
-    }
-
-    public void setUserClaims(UserClaim userClaim) {
-        userClaims.add(userClaim);
-    }
-
-    public List<UserClaim> getUserClaims() {
-        return userClaims;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -22,22 +22,35 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.action.execution.ActionExecutionRequestBuilder;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionRequestBuilderException;
-import org.wso2.carbon.identity.action.execution.model.*;
+import org.wso2.carbon.identity.action.execution.model.ActionExecutionRequest;
+import org.wso2.carbon.identity.action.execution.model.ActionType;
+import org.wso2.carbon.identity.action.execution.model.AllowedOperation;
+import org.wso2.carbon.identity.action.execution.model.Application;
+import org.wso2.carbon.identity.action.execution.model.Event;
+import org.wso2.carbon.identity.action.execution.model.Header;
+import org.wso2.carbon.identity.action.execution.model.Operation;
+import org.wso2.carbon.identity.action.execution.model.Organization;
+import org.wso2.carbon.identity.action.execution.model.Param;
+import org.wso2.carbon.identity.action.execution.model.Request;
+import org.wso2.carbon.identity.action.execution.model.Tenant;
+import org.wso2.carbon.identity.action.execution.model.User;
+import org.wso2.carbon.identity.action.execution.model.UserStore;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.UserIdNotFoundException;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AllowedOperationBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationRequest;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationRequestEvent;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationRequestEvent.AuthenticatedStep;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatingUser;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -65,11 +78,10 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
                 AuthenticatorAdapterConstants.AUTH_CONTEXT);
 
         ActionExecutionRequest.Builder actionRequestBuilder = new ActionExecutionRequest.Builder();
-        actionRequestBuilder.flowId((String) eventContext.get(AuthenticatorAdapterConstants.FLOW_ID));
+        actionRequestBuilder.flowId(context.getContextIdentifier());
         actionRequestBuilder.actionType(getSupportedActionType());
         actionRequestBuilder.event(getEvent(request, context));
-        AllowedOperationBuilder allowedOperationBuilder = new AllowedOperationBuilder();
-        actionRequestBuilder.allowedOperations(allowedOperationBuilder.getAllowedOperations());
+        actionRequestBuilder.allowedOperations(getAllowedOperations());
 
         return actionRequestBuilder.build();
     }
@@ -77,15 +89,15 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
     private Event getEvent(HttpServletRequest request, AuthenticationContext context)
             throws ActionExecutionRequestBuilderException {
 
-        AuthenticatedUser lastAuthenticatedUser = context.getLastAuthenticatedUser();
+        AuthenticatedUser currentAuthenticatedUser = context.getSubject();
         String tenantDomain = context.getTenantDomain();
 
         AuthenticationRequestEvent.Builder eventBuilder = new AuthenticationRequestEvent.Builder();
         eventBuilder.tenant(new Tenant(String.valueOf(IdentityTenantUtil.getTenantId(tenantDomain)), tenantDomain));
-        if (lastAuthenticatedUser != null) {
-            eventBuilder.user(getUserForEventBuilder(lastAuthenticatedUser));
-            eventBuilder.organization(getOrganizationForEventBuilder(lastAuthenticatedUser));
-            eventBuilder.userStore(new UserStore(lastAuthenticatedUser.getUserStoreDomain()));
+        if (currentAuthenticatedUser != null) {
+            eventBuilder.user(getUserForEventBuilder(currentAuthenticatedUser));
+            eventBuilder.organization(getOrganizationForEventBuilder(currentAuthenticatedUser));
+            eventBuilder.userStore(new UserStore(currentAuthenticatedUser.getUserStoreDomain()));
         }
         eventBuilder.application(new Application(context.getServiceProviderResourceId(),
                 context.getServiceProviderName()));
@@ -156,5 +168,12 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
         }
 
         return new AuthenticationRequest(additionalHeaders,additionalParams);
+    }
+
+    private List<AllowedOperation> getAllowedOperations() {
+
+        AllowedOperation operation = new AllowedOperation();
+        operation.setOp(Operation.REDIRECT);
+        return Collections.singletonList(operation);
     }
 }
