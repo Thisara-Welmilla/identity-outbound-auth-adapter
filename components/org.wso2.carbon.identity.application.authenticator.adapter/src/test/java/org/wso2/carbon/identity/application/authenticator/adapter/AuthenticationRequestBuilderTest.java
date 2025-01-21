@@ -175,7 +175,7 @@ public class AuthenticationRequestBuilderTest {
         Assert.assertEquals(actualAuthenticatingUser.getId(), expectedUser.getId());
         Assert.assertEquals(actualAuthenticatingUser.getIdp(), expectedUser.getIdp());
         Assert.assertEquals(actualAuthenticatingUser.getSub(), expectedUser.getSub());
-        Assert.assertEquals(actualAuthenticatingUser.getUserClaims().size(), expectedUser.getUserClaims().size());
+        Assert.assertEquals(actualAuthenticatingUser.getClaims().size(), expectedUser.getClaims().size());
         Assert.assertEquals(actualAuthenticationEvent.getOrganization().getId(), AuthenticatedUserConstants.ORG_ID);
         Assert.assertEquals(actualAuthenticationEvent.getUserStore().getName(), "PRIMARY");
         Assert.assertEquals(actualAuthenticationEvent.getCurrentStepIndex(), authHistory.size() + 1);

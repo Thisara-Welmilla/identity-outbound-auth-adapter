@@ -23,8 +23,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.CarbonConstants;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionResponseProcessorException;
-import org.wso2.carbon.identity.action.execution.model.UserClaim;
-import org.wso2.carbon.identity.action.execution.model.UserStore;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.UserIdNotFoundException;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
@@ -58,10 +56,10 @@ public class AuthenticatedUserBuilder {
 
     private void validateUserData() throws ActionExecutionResponseProcessorException {
 
-        if (StringUtils.isBlank(user.getId())) {
+        if (StringUtils.isBlank(user.getUser().getId())) {
             throw new ActionExecutionResponseProcessorException("User Id is not found in the authenticated user data.");
         }
-        if (AuthenticatorAdapterConstants.UserType.LOCAL.equals(userType) && user.getUserStore() == null) {
+        if (AuthenticatorAdapterConstants.UserType.LOCAL.equals(userType) && user.getUser().getUserStore() == null) {
             throw new ActionExecutionResponseProcessorException("User store domain is not found in the authenticated " +
                     "user data for the local user.");
         }
@@ -89,7 +87,7 @@ public class AuthenticatedUserBuilder {
                 AuthenticatorAdapterConstants.UserType.LOCAL : AuthenticatorAdapterConstants.UserType.FEDERATED;
     }
 
-    private User resolveLocalUserFromUserStore(AuthenticationContext context, UserStore userStore)
+    private User resolveLocalUserFromUserStore(AuthenticationContext context, AuthenticatedUserData.UserStore userStore)
             throws ActionExecutionResponseProcessorException {
 
         AbstractUserStoreManager userStoreManager = resolveUserStoreManager(context, userStore.getName());
@@ -97,25 +95,26 @@ public class AuthenticatedUserBuilder {
             return userStoreManager.getUser(authenticatedUser.getUserId(), null);
 
         } catch (org.wso2.carbon.user.core.UserStoreException e) {
-            String message = "Error occurred when trying to resolve local user by user Id:" + user.getId();
+            String message = "Error occurred when trying to resolve local user by user Id:" + user.getUser().getId();
             throw new ActionExecutionResponseProcessorException(message, e);
 
         } catch (UserIdNotFoundException e) {
-            String message = "No user found for the given user Id:" + user.getId();
+            String message = "No user found for the given user Id:" + user.getUser().getId();
             throw new ActionExecutionResponseProcessorException(message, e);
         }
     }
 
     private void resolveFederatedUser() {
 
-        authenticatedUser = AuthenticatedUser.createFederateAuthenticatedUserFromSubjectIdentifier(user.getId());
+        authenticatedUser = AuthenticatedUser.createFederateAuthenticatedUserFromSubjectIdentifier(
+                user.getUser().getId());
         authenticatedUser.setFederatedIdPName(context.getExternalIdP().getIdPName());
         authenticatedUser.setFederatedUser(true);
     }
 
     private void resolveLocalUser() throws ActionExecutionResponseProcessorException {
 
-        User localUser = resolveLocalUserFromUserStore(context, user.getUserStore());
+        User localUser = resolveLocalUserFromUserStore(context, user.getUser().getUserStore());
         authenticatedUser = AuthenticatedUser.createLocalAuthenticatedUserFromSubjectIdentifier(
                 localUser.getUserStoreDomain() + CarbonConstants.DOMAIN_SEPARATOR + localUser.getUsername());
     }
@@ -124,9 +123,9 @@ public class AuthenticatedUserBuilder {
 
         Map<ClaimMapping, String> userAttributes = new HashMap<>();
 
-        for (UserClaim claim : user.getClaims()) {
+            for (AuthenticatedUserData.Claim claim : user.getUser().getClaims()) {
             userAttributes.put(ClaimMapping.build(
-                    claim.getName(), claim.getName(), null, false), claim.getValue());
+                    claim.getUri(), claim.getUri(), null, false), claim.getValue());
         }
         return userAttributes;
     }

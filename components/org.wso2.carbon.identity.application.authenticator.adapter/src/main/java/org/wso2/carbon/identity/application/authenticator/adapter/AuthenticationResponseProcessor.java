@@ -23,12 +23,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.action.execution.ActionExecutionResponseProcessor;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionResponseProcessorException;
-import org.wso2.carbon.identity.action.execution.model.ActionType;
 import org.wso2.carbon.identity.action.execution.model.ActionExecutionStatus;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationErrorResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationFailureResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationIncompleteResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationSuccessResponse;
+import org.wso2.carbon.identity.action.execution.model.ActionType;
 import org.wso2.carbon.identity.action.execution.model.Error;
 import org.wso2.carbon.identity.action.execution.model.ErrorStatus;
 import org.wso2.carbon.identity.action.execution.model.Event;
@@ -42,8 +42,6 @@ import org.wso2.carbon.identity.action.execution.model.Success;
 import org.wso2.carbon.identity.action.execution.model.SuccessStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthActionInvocationSuccessResponse;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 
 import javax.servlet.http.HttpServletResponse;
@@ -72,12 +70,7 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
 
         AuthenticationContext context = (AuthenticationContext) eventContext.get(
                 AuthenticatorAdapterConstants.AUTH_CONTEXT);
-
-        AuthActionInvocationSuccessResponse response =
-                (AuthActionInvocationSuccessResponse) actionInvocationSuccessResponse;
-
-        AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(response.getAuthenticatedUserData(), context)
-                .buildAuthenticateduser();
+        AuthenticatedUser authenticatedUser = new AuthenticatedUser();
         context.setSubject(authenticatedUser);
 
         return new SuccessStatus.Builder().setResponseContext(eventContext).build();

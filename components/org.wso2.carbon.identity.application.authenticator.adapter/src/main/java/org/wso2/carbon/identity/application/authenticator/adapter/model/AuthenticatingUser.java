@@ -53,7 +53,7 @@ public class AuthenticatingUser extends User {
         if (userAttributes != null) {
             for (ClaimMapping claimMap : userAttributes.keySet()) {
                 String claimUri = claimMap.getLocalClaim().getClaimUri();
-                getUserClaims().add(new UserClaim(claimUri, userAttributes.get(claimMap)));
+                getClaims().add(new UserClaim(claimUri, userAttributes.get(claimMap)));
             }
         }
     }

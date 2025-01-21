@@ -18,14 +18,16 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter;
 
-import org.wso2.carbon.identity.application.authentication.framework.ApplicationAuthenticator;
+import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorAdapterService;
+import org.wso2.carbon.identity.application.authentication.framework.FederatedApplicationAuthenticator;
+import org.wso2.carbon.identity.application.authentication.framework.LocalApplicationAuthenticator;
 import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorConfig;
 import org.wso2.carbon.identity.application.common.model.LocalAuthenticatorConfig;
 
 /**
  * This is the service class for handling the Authenticator Adapters.
  */
-public class AuthenticationAdapterService {
+public class AuthenticationAdapterServiceImp implements AuthenticatorAdapterService {
 
     /**
      * Create nre Federated Authenticator Adapter for given configurations.
@@ -33,7 +35,8 @@ public class AuthenticationAdapterService {
      * @param config    Federated Authenticator Configuration.
      * @return  FederatedAuthenticatorAdapter instance.
      */
-    public ApplicationAuthenticator createFederatedAuthenticatorAdapter(FederatedAuthenticatorConfig config) {
+    @Override
+    public FederatedApplicationAuthenticator getFederatedAuthenticatorAdapter(FederatedAuthenticatorConfig config) {
 
         return new FederatedAuthenticatorAdapter(config);
     }
@@ -44,7 +47,8 @@ public class AuthenticationAdapterService {
      * @param config    Local Authenticator Configuration.
      * @return  LocalAuthenticatorAdapter instance.
      */
-    public ApplicationAuthenticator createLocalAuthenticatorAdapter(LocalAuthenticatorConfig config) {
+    @Override
+    public LocalApplicationAuthenticator getLocalAuthenticatorAdapter(LocalAuthenticatorConfig config) {
 
         return new LocalAuthenticatorAdapter(config);
     }

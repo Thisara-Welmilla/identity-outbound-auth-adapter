@@ -2,127 +2,133 @@ package org.wso2.carbon.identity.application.authenticator.adapter.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.apache.commons.lang.StringUtils;
-import org.wso2.carbon.identity.action.execution.model.UserClaim;
-import org.wso2.carbon.identity.action.execution.model.UserStore;
-
-import java.io.IOException;
+import org.wso2.carbon.identity.action.execution.model.ResponseData;
 
 /**
- * This class holds the data of the authenticated user, which are presented in the request and response to
- * the external authentication service.
+ * This class holds the data of the authenticated user, which are presented in response from the external
+ * authentication service.
  */
-public class AuthenticatedUserData {
+import java.util.List;
 
-    @JsonProperty("id")
-    private final String id;
+public class AuthenticatedUserData implements ResponseData {
 
-    @JsonProperty("groups")
-    private final String[] groups;
-
-    @JsonProperty("claims")
-    @JsonDeserialize(using = UserClaimDeserializer.class)
-    private UserClaim[] claims;
-
-    @JsonProperty("userStore")
-    @JsonDeserialize(using = UserStoreDeserializer.class)
-    private final UserStore userStore;
-
-    private String sub;
+    @JsonProperty("user")
+    private User user;
 
     @JsonCreator
-    public AuthenticatedUserData(
-            @JsonProperty("id") String id,
-            @JsonProperty("groups") String[] groups,
-            @JsonProperty("claims") UserClaim[] claims,
-            @JsonProperty("userStore") UserStore userStore
-    ) {
-        this.id = id;
-        this.groups = groups;
-        this.userStore = userStore;
-        resolveUserClaims(claims);
+    public AuthenticatedUserData(@JsonProperty("user") User user) {
+        this.user = user;
     }
 
-    public String getId() {
-
-        return id;
+    public AuthenticatedUserData() {
     }
 
-    public String[] getGroups() {
-
-        return groups;
+    public User getUser() {
+        return user;
     }
 
-    public UserClaim[] getClaims() {
+    public static class User {
 
-        return claims;
-    }
+        @JsonProperty("id")
+        private String id;
 
-    public UserStore getUserStore() {
+        @JsonProperty("groups")
+        private List<String> groups;
 
-        return userStore;
-    }
+        @JsonProperty("claims")
+        private List<Claim> claims;
 
-    public String getSub() {
+        @JsonProperty("userStore")
+        private UserStore userStore;
 
-        return sub;
-    }
-
-    private void resolveUserClaims(UserClaim[] claims) {
-
-        for (UserClaim claim : claims) {
-            if (StringUtils.isBlank(claim.getName()) || StringUtils.isBlank(claim.getValue())) {
-                throw new IllegalArgumentException("Claim name and value are mandatory for all user claims.");
-            }
-            if (claim.getName().equalsIgnoreCase("sub")) {
-                sub = claim.getValue();
-            }
+        // No-argument constructor for Jackson
+        public User() {
         }
-        this.claims = claims;
-    }
 
-    /**
-     * Custom deserializer for UserClaim array.
-     */
-    private static class UserClaimDeserializer extends JsonDeserializer<UserClaim[]> {
+        @JsonCreator
+        public User(
+                @JsonProperty("id") String id,
+                @JsonProperty("groups") List<String> groups,
+                @JsonProperty("claims") List<Claim> claims,
+                @JsonProperty("userStore") UserStore userStore) {
+            this.id = id;
+            this.groups = groups;
+            this.claims = claims;
+            this.userStore = userStore;
+        }
 
-        @Override
-        public UserClaim[] deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-            JsonNode node = parser.getCodec().readTree(parser);
+        public String getId() {
+            return id;
+        }
 
-            if (!node.isArray()) {
-                throw new IllegalArgumentException("Expected an array of UserClaim objects");
-            }
+        public List<String> getGroups() {
+            return groups;
+        }
 
-            UserClaim[] claims = new UserClaim[node.size()];
-            for (int i = 0; i < node.size(); i++) {
-                JsonNode claimNode = node.get(i);
-                String name = claimNode.get("name").asText();
-                String value = claimNode.get("value").asText();
-                claims[i] = new UserClaim(name, value);
-            }
-
+        public List<Claim> getClaims() {
             return claims;
         }
+
+        public UserStore getUserStore() {
+            return userStore;
+        }
     }
 
-    /**
-     * Custom deserializer for UserStore object.
-     */
-    private static class UserStoreDeserializer extends JsonDeserializer<UserStore> {
+    public static class Claim {
 
-        @Override
-        public UserStore deserialize(JsonParser parser, DeserializationContext context) throws IOException {
+        @JsonProperty("uri")
+        private String uri;
 
-            JsonNode node = parser.getCodec().readTree(parser);
-            String name = node.get("name").asText(null);
+        @JsonProperty("value")
+        private String value;
 
-            return new UserStore(name);
+        // No-argument constructor for Jackson
+        public Claim() {
+        }
+
+        @JsonCreator
+        public Claim(
+                @JsonProperty("uri") String uri,
+                @JsonProperty("value") String value) {
+            this.uri = uri;
+            this.value = value;
+        }
+
+        public String getUri() {
+            return uri;
+        }
+
+        public String getValue() {
+            return value;
+        }
+    }
+
+    public static class UserStore {
+
+        @JsonProperty("id")
+        private String id;
+
+        @JsonProperty("name")
+        private String name;
+
+        // No-argument constructor for Jackson
+        public UserStore() {
+        }
+
+        @JsonCreator
+        public UserStore(
+                @JsonProperty("id") String id,
+                @JsonProperty("name") String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public String getName() {
+            return name;
         }
     }
 }

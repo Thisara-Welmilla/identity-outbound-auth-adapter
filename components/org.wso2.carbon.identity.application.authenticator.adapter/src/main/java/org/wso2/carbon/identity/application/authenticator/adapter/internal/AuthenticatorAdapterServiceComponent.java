@@ -24,12 +24,15 @@ import org.osgi.service.component.ComponentContext;
 import org.wso2.carbon.identity.action.execution.ActionExecutionRequestBuilder;
 import org.wso2.carbon.identity.action.execution.ActionExecutionResponseProcessor;
 import org.wso2.carbon.identity.action.execution.ActionExecutorService;
+import org.wso2.carbon.identity.action.execution.ActionInvocationResponseClassProvider;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
-import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationAdapterService;
+import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorAdapterService;
+import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationAdapterServiceImp;
+import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationInvocationResponseDeserializer;
 import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationRequestBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationResponseProcessor;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
@@ -47,12 +50,14 @@ public class AuthenticatorAdapterServiceComponent {
     protected void activate(ComponentContext ctxt) {
 
         try {
-            ctxt.getBundleContext().registerService(AuthenticationAdapterService.class.getName(),
-                    new AuthenticationAdapterService(), null);
+            ctxt.getBundleContext().registerService(AuthenticatorAdapterService.class,
+                    new AuthenticationAdapterServiceImp(), null);
             ctxt.getBundleContext().registerService(ActionExecutionRequestBuilder.class,
                     new AuthenticationRequestBuilder(), null);
             ctxt.getBundleContext().registerService(ActionExecutionResponseProcessor.class,
                     new AuthenticationResponseProcessor(), null);
+            ctxt.getBundleContext().registerService(ActionInvocationResponseClassProvider.class,
+                    new AuthenticationInvocationResponseDeserializer(), null);
 
             if (log.isDebugEnabled()) {
                 log.debug("Authentication adapter bundle is activated");

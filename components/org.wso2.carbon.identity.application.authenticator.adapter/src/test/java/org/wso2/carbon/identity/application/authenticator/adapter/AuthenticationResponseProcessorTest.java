@@ -44,7 +44,7 @@ import org.wso2.carbon.identity.application.authentication.framework.context.Aut
 import org.wso2.carbon.identity.application.authentication.framework.exception.UserIdNotFoundException;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.UserClaim;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.ActionInvocationResponseBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.ActionInvocationResponseBuilder.ExternallyAuthenticatedUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedTestUserBuilder;
@@ -114,7 +114,7 @@ public class AuthenticationResponseProcessorTest {
         ExternallyAuthenticatedUser authenticatedUser = new ExternallyAuthenticatedUser();
         authenticatedUser.setUserStore(new UserStore("PRIMARY"));
         ActionInvocationSuccessResponse authSuccessResponse = ActionInvocationResponseBuilder
-                .buildAuthenticationSuccessResponse(new ArrayList<>(), authenticatedUser.covertJsonString());
+                .buildAuthenticationSuccessResponse(new ArrayList<>(), null);
 
         return new Object[][] {
                 {eventContextForLocalUser, authenticationRequest, authSuccessResponse, authenticatedUser}
@@ -146,19 +146,19 @@ public class AuthenticationResponseProcessorTest {
         ActionInvocationSuccessResponse authResponseWithOperation =
                 ActionInvocationResponseBuilder.buildAuthenticationSuccessResponse(
                         new ArrayList<>(buildRedirectPerformableOperation("https://dummy-url")),
-                        authenticatedUser.covertJsonString());
+                        null);
 
         // Authenticator success response with no user id in user data
         authenticatedUser.setId(null);
         String dataWithNoUserId = authenticatedUser.covertJsonString();
         ActionInvocationSuccessResponse authResponseWithNoUserId = ActionInvocationResponseBuilder
-                .buildAuthenticationSuccessResponse(new ArrayList<>(), dataWithNoUserId);
+                .buildAuthenticationSuccessResponse(new ArrayList<>(), null);
 
         // Authenticator success response with invalid user claims in user data
         String dataWithInvalidClaims = new ExternallyAuthenticatedUser().covertJsonString()
                 .replace("\"name\":\"claim-1\",", "");
         ActionInvocationSuccessResponse authResponseWithInvalidClaims = ActionInvocationResponseBuilder
-                .buildAuthenticationSuccessResponse(new ArrayList<>(), dataWithInvalidClaims);
+                .buildAuthenticationSuccessResponse(new ArrayList<>(), null);
 
         return new Object[][] {
                 {eventContextForLocalUser, authenticationRequest, authResponseWithNoData, "The data field in the " +
@@ -201,7 +201,7 @@ public class AuthenticationResponseProcessorTest {
 
         Assert.assertNotNull(authenticatedUser);
         Assert.assertEquals(authenticatedUser.getUserId(), expectedUser.getId());
-        for (UserClaim claim : expectedUser.getClaims()) {
+        for (AuthenticatedUserData.Claim claim : expectedUser.getClaims()) {
             //Assert.assertEquals(authenticatedUser.getUserAttributes().get(claim.getName()), claim.getValue());
         }
     }

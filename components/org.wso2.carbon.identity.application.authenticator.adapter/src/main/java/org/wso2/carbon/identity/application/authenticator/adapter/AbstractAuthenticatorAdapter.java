@@ -32,6 +32,7 @@ import org.wso2.carbon.identity.application.authentication.framework.util.Framew
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.common.model.Property;
+import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -94,7 +95,7 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
         try {
             ActionExecutionStatus executionStatus =
                     AuthenticatorAdapterDataHolder.getInstance().getActionExecutorService()
-                            .execute(ActionType.AUTHENTICATION, new String[]{actionId}, eventContext, tenantDomain);
+                            .execute(ActionType.AUTHENTICATION, actionId, eventContext, tenantDomain);
             if (log.isDebugEnabled()) {
                 log.debug(String.format(
                         "Invoked authentication action for Authentication flow ID: %s. Status: %s",
@@ -169,5 +170,11 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     @Override
     protected boolean retryAuthenticationEnabled() {
         return true;
+    }
+
+    @Override
+    public AuthenticatorPropertyConstants.DefinedByType getDefinedByType() {
+
+        return AuthenticatorPropertyConstants.DefinedByType.USER;
     }
 }

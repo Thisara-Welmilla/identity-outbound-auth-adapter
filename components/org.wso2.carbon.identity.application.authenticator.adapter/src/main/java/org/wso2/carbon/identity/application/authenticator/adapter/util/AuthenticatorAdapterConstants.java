@@ -33,6 +33,7 @@ public class AuthenticatorAdapterConstants {
     public static final String ACTION_ID_CONFIG = "actionId";;
     public static final String LOCAL_IDP = "LOCAL";
     public static final String FED_IDP = "FEDERATED";
+    public static final String EXECUTION_STATUS_PROP_NAME = "actionExecutionStatus";
 
     /**
      * User Type of the authenticated user communicated with the external authentication service.

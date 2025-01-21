@@ -21,13 +21,8 @@ package org.wso2.carbon.identity.application.authenticator.adapter.util;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.wso2.carbon.identity.action.execution.model.ActionInvocationErrorResponse;
-import org.wso2.carbon.identity.action.execution.model.ActionInvocationFailureResponse;
-import org.wso2.carbon.identity.action.execution.model.ActionInvocationResponse;
-import org.wso2.carbon.identity.action.execution.model.ActionInvocationSuccessResponse;
-import org.wso2.carbon.identity.action.execution.model.PerformableOperation;
-import org.wso2.carbon.identity.action.execution.model.UserStore;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.UserClaim;
+import org.wso2.carbon.identity.action.execution.model.*;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,12 +61,12 @@ public class ActionInvocationResponseBuilder {
      * @return ActionInvocationResponse
      */
     public static ActionInvocationSuccessResponse buildAuthenticationSuccessResponse(
-            List<PerformableOperation> operations, String data) {
+            List<PerformableOperation> operations, ResponseData data) {
 
         return new ActionInvocationSuccessResponse.Builder()
                 .actionStatus(ActionInvocationResponse.Status.SUCCESS)
                 .operations(operations)
-                .data(data)
+                .context(data)
                 .build();
     }
 
@@ -92,12 +87,12 @@ public class ActionInvocationResponseBuilder {
     public static class ExternallyAuthenticatedUser {
 
         ObjectMapper objectMapper = new ObjectMapper();
-        UserClaim claim1 = new UserClaim("claim-1", "value-1");
-        UserClaim claim2 = new UserClaim("claim-2", "value-2");
+        AuthenticatedUserData.Claim claim1 = new AuthenticatedUserData.Claim("claim-1", "value-1");
+        AuthenticatedUserData.Claim  claim2 = new AuthenticatedUserData.Claim ("claim-2", "value-2");
 
         private String id;
         private List<String> groups;
-        private List<UserClaim> claims;
+        private List<AuthenticatedUserData.Claim> claims;
         private UserStore userStore;
 
         public ExternallyAuthenticatedUser() {
@@ -117,7 +112,7 @@ public class ActionInvocationResponseBuilder {
             this.groups = groups;
         }
 
-        public void setClaims(List<UserClaim> claims) {
+        public void setClaims(List<AuthenticatedUserData.Claim> claims) {
 
             this.claims = claims;
         }
@@ -132,7 +127,7 @@ public class ActionInvocationResponseBuilder {
             return groups;
         }
 
-        public List<UserClaim> getClaims() {
+        public List<AuthenticatedUserData.Claim> getClaims() {
 
             return claims;
         }
