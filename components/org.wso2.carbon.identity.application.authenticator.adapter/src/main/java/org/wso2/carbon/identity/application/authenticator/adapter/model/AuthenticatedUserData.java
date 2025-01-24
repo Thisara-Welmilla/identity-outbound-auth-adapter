@@ -4,12 +4,12 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.wso2.carbon.identity.action.execution.model.ResponseData;
 
+import java.util.List;
+
 /**
  * This class holds the data of the authenticated user, which are presented in response from the external
  * authentication service.
  */
-import java.util.List;
-
 public class AuthenticatedUserData implements ResponseData {
 
     @JsonProperty("user")
@@ -27,6 +27,9 @@ public class AuthenticatedUserData implements ResponseData {
         return user;
     }
 
+    /**
+     * This class holds the data of the authenticated user.
+     */
     public static class User {
 
         @JsonProperty("id")
@@ -74,6 +77,9 @@ public class AuthenticatedUserData implements ResponseData {
         }
     }
 
+    /**
+     * This class holds the data of the claims of the authenticated user.
+     */
     public static class Claim {
 
         @JsonProperty("uri")
@@ -103,6 +109,9 @@ public class AuthenticatedUserData implements ResponseData {
         }
     }
 
+    /**
+     * This class holds the data of the user store of the authenticated user.
+     */
     public static class UserStore {
 
         @JsonProperty("id")

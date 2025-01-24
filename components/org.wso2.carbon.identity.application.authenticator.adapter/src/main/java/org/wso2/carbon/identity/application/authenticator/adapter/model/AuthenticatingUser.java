@@ -24,6 +24,8 @@ import org.wso2.carbon.identity.application.authentication.framework.model.Authe
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,29 +35,29 @@ public class AuthenticatingUser extends User {
 
     private String idp;
     private String sub;
+    private final List<UserClaim> claims = new ArrayList<>();
 
-    public AuthenticatingUser(String id){
-
+    public AuthenticatingUser(String id) {
         super(id);
     }
 
     public AuthenticatingUser(String id, AuthenticatedUser user) {
-
         super(id);
         sub = user.getAuthenticatedSubjectIdentifier();
-        if (user.isFederatedUser()) {
-            idp = AuthenticatorAdapterConstants.FED_IDP;
-        } else {
-            idp = AuthenticatorAdapterConstants.LOCAL_IDP;
-        }
+        idp = user.isFederatedUser() ? AuthenticatorAdapterConstants.FED_IDP : AuthenticatorAdapterConstants.LOCAL_IDP;
 
         Map<ClaimMapping, String> userAttributes = user.getUserAttributes();
         if (userAttributes != null) {
-            for (ClaimMapping claimMap : userAttributes.keySet()) {
-                String claimUri = claimMap.getLocalClaim().getClaimUri();
-                getClaims().add(new UserClaim(claimUri, userAttributes.get(claimMap)));
+            for (Map.Entry<ClaimMapping, String> entry : userAttributes.entrySet()) {
+                String claimUri = entry.getKey().getLocalClaim().getClaimUri();
+                String claimValue = entry.getValue();
+                claims.add(new UserClaim(claimUri, claimValue));
             }
         }
+    }
+
+    public List<UserClaim> getClaims() {
+        return claims;
     }
 
     public void setIdp(String idp) {
@@ -74,3 +76,4 @@ public class AuthenticatingUser extends User {
         return sub;
     }
 }
+

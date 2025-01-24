@@ -42,12 +42,15 @@ import org.wso2.carbon.identity.action.execution.model.Success;
 import org.wso2.carbon.identity.action.execution.model.SuccessStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * This is responsible for processing authentication response from the external authentication service.
@@ -65,12 +68,14 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
 
     @Override
     public ActionExecutionStatus<Success> processSuccessResponse(Map<String, Object> eventContext, Event event,
-                                                                 ActionInvocationSuccessResponse actionInvocationSuccessResponse)
+            ActionInvocationSuccessResponse actionInvocationSuccessResponse)
             throws ActionExecutionResponseProcessorException {
 
         AuthenticationContext context = (AuthenticationContext) eventContext.get(
                 AuthenticatorAdapterConstants.AUTH_CONTEXT);
-        AuthenticatedUser authenticatedUser = new AuthenticatedUser();
+        AuthenticatedUserData authenticatedUserData = (AuthenticatedUserData) actionInvocationSuccessResponse.getData();
+        AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(authenticatedUserData, context)
+                .buildAuthenticateduser();
         context.setSubject(authenticatedUser);
 
         return new SuccessStatus.Builder().setResponseContext(eventContext).build();
@@ -81,7 +86,8 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
             ActionInvocationIncompleteResponse actionInvocationIncompleteResponse)
             throws ActionExecutionResponseProcessorException {
 
-        HttpServletResponse response = (HttpServletResponse) eventContext.get(AuthenticatorAdapterConstants.AUTH_RESPONSE);
+        HttpServletResponse response = (HttpServletResponse) eventContext
+                .get(AuthenticatorAdapterConstants.AUTH_RESPONSE);
 
         List<PerformableOperation> operationsToPerform = actionInvocationIncompleteResponse.getOperations();
         validateOperationForIncompleteStatus(operationsToPerform);
@@ -92,7 +98,7 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
             return new IncompleteStatus.Builder().responseContext(eventContext).build();
         } catch (IOException e) {
             throw new ActionExecutionResponseProcessorException(String.format(
-                    "Error while redirecting to the URL: %s", url ), e);
+                    "Error while redirecting to the URL: %s", url), e);
         }
     }
 
@@ -101,8 +107,8 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
 
         if (operationsToPerform == null) {
             throw new ActionExecutionResponseProcessorException(String.format("The list of performable operations is " +
-                    "empty. For the INCOMPLETE action invocation status, there must be a REDIRECTION operation defined " +
-                    "for the %s action type.", getSupportedActionType()));
+                    "empty. For the INCOMPLETE action invocation status, there must be a REDIRECTION operation " +
+                    "defined for the %s action type.", getSupportedActionType()));
         }
 
         if (operationsToPerform.size() != 1) {

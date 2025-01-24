@@ -27,6 +27,8 @@ import org.wso2.carbon.identity.application.common.model.LocalAuthenticatorConfi
  */
 public class LocalAuthenticatorAdapter extends AbstractAuthenticatorAdapter implements LocalApplicationAuthenticator {
 
+    private static final long serialVersionUID = 1357924680135792468L;
+
     public LocalAuthenticatorAdapter(LocalAuthenticatorConfig config) {
 
         authenticatorName = config.getName();

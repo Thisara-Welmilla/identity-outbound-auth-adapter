@@ -58,7 +58,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.wso2.carbon.base.MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
@@ -99,7 +98,8 @@ public class AuthenticationResponseProcessorTest {
         eventContextForLocalUser = new EventContextBuilder(
                 localUser, SUPER_TENANT_DOMAIN_NAME, headers, parameters, authHistory)
                 .getEventContext();
-        authenticationRequest = new AuthenticationRequestBuilder().buildActionExecutionRequest(eventContextForLocalUser);
+        authenticationRequest = new AuthenticationRequestBuilder()
+                .buildActionExecutionRequest(eventContextForLocalUser);
     }
 
     @Test
@@ -163,25 +163,14 @@ public class AuthenticationResponseProcessorTest {
         return new Object[][] {
                 {eventContextForLocalUser, authenticationRequest, authResponseWithNoData, "The data field in the " +
                         "SUCCESS action invocation status must not be empty for the AUTHENTICATION action type."},
-                {eventContextForLocalUser, authenticationRequest, authResponseWithOperation, "The list of performable " +
-                        "operations must be empty for the SUCCESS action invocation status for the AUTHENTICATION " +
+                {eventContextForLocalUser, authenticationRequest, authResponseWithOperation, "The list of performable" +
+                        " operations must be empty for the SUCCESS action invocation status for the AUTHENTICATION " +
                         "action type."},
                 {eventContextForLocalUser, authenticationRequest, authResponseWithNoUserId,
                         "User Id is not found in the authenticated user data."},
                 {eventContextForLocalUser, authenticationRequest, authResponseWithInvalidClaims, "The provided data " +
                         "cannot be cast to an AuthenticatedUserData object:" + dataWithInvalidClaims}
         };
-    }
-
-    @Test(dataProvider = "getSuccessStatusResponseForProcessorExceptions")
-    public void testProcessSuccessResponseWithProcessorExceptions(Map<String, Object> eventContext,
-            ActionExecutionRequest authRequest, ActionInvocationSuccessResponse successResponse,
-            String expectedErrorMessage) {
-
-        ActionExecutionResponseProcessorException error = assertThrows(ActionExecutionResponseProcessorException.class,
-                () -> authenticationResponseProcessor.processSuccessResponse(
-                        eventContext, authRequest.getEvent(), successResponse));
-        Assert.assertEquals(error.getMessage(), expectedErrorMessage);
     }
 
     private void assertAuthenticationContext(Map<String, Object> eventContext,

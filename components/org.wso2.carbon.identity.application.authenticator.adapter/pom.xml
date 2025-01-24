@@ -58,12 +58,28 @@
             <artifactId>org.wso2.carbon.identity.action.execution</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
+            <artifactId>org.wso2.carbon.identity.base</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.wso2.carbon</groupId>
             <artifactId>org.wso2.carbon.user.core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.wso2.carbon</groupId>
             <artifactId>org.wso2.carbon.core.common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
         <!--Test Dependencies-->
         <dependency>
@@ -127,6 +143,8 @@
                             org.wso2.carbon.identity.application.common.model;
                             version="${identity.framework.package.import.version.range}",
                             org.wso2.carbon.identity.core.*;
+                            version="${identity.framework.package.import.version.range}",
+                            org.wso2.carbon.identity.base.*;
                             version="${identity.framework.package.import.version.range}",
                             org.wso2.carbon.identity.claim.metadata.*;
                             version="${identity.framework.package.import.version.range}",

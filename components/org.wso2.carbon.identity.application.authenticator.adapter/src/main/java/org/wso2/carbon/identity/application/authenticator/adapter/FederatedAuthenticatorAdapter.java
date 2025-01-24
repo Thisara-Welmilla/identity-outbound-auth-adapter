@@ -27,6 +27,8 @@ import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorC
 public class FederatedAuthenticatorAdapter extends AbstractAuthenticatorAdapter implements
         FederatedApplicationAuthenticator {
 
+    private static final long serialVersionUID = 2468013579246801357L;
+
     public FederatedAuthenticatorAdapter(FederatedAuthenticatorConfig config) {
 
         authenticatorName = config.getName();

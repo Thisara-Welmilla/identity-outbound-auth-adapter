@@ -40,20 +40,21 @@ import org.wso2.carbon.identity.application.authentication.framework.context.Aut
 import org.wso2.carbon.identity.application.authentication.framework.exception.UserIdNotFoundException;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatingUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationRequest;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationRequestEvent;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationRequestEvent.AuthenticatedStep;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatingUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * This is a builder class which is responsible for building authentication request payload which will be sent to the
@@ -117,7 +118,8 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
         }
     }
 
-    private Organization getOrganizationForEventBuilder(AuthenticatedUser authenticatedUser) throws ActionExecutionRequestBuilderException {
+    private Organization getOrganizationForEventBuilder(AuthenticatedUser authenticatedUser)
+            throws ActionExecutionRequestBuilderException {
 
         String organizationId = authenticatedUser.getUserResidentOrganization();
         try {
@@ -167,7 +169,7 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
             additionalParams.add(param);
         }
 
-        return new AuthenticationRequest(additionalHeaders,additionalParams);
+        return new AuthenticationRequest(additionalHeaders, additionalParams);
     }
 
     private List<AllowedOperation> getAllowedOperations() {

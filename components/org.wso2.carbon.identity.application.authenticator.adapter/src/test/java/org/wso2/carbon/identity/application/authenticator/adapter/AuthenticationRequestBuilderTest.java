@@ -31,8 +31,8 @@ import org.wso2.carbon.identity.action.execution.model.AllowedOperation;
 import org.wso2.carbon.identity.action.execution.model.Application;
 import org.wso2.carbon.identity.action.execution.model.Event;
 import org.wso2.carbon.identity.action.execution.model.Header;
-import org.wso2.carbon.identity.action.execution.model.Organization;
 import org.wso2.carbon.identity.action.execution.model.Operation;
+import org.wso2.carbon.identity.action.execution.model.Organization;
 import org.wso2.carbon.identity.action.execution.model.Param;
 import org.wso2.carbon.identity.action.execution.model.Request;
 import org.wso2.carbon.identity.action.execution.model.Tenant;
@@ -59,8 +59,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
-import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedTestUserBuilder.AuthenticatedUserConstants;
 import static org.wso2.carbon.base.MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
+import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedTestUserBuilder.AuthenticatedUserConstants;
 
 public class AuthenticationRequestBuilderTest {
 
@@ -161,7 +161,7 @@ public class AuthenticationRequestBuilderTest {
                 expectedEvent.getApplication().getName());
 
         if (expectedEvent.getUser() == null) {
-            Assert.assertNull(actualAuthenticationEvent.getUser() );
+            Assert.assertNull(actualAuthenticationEvent.getUser());
             Assert.assertNull(actualAuthenticationEvent.getUserStore());
             Assert.assertNull(actualAuthenticationEvent.getOrganization());
             Assert.assertEquals(actualAuthenticationEvent.getCurrentStepIndex(), 1);
@@ -187,14 +187,16 @@ public class AuthenticationRequestBuilderTest {
         Assert.assertTrue(actualRequest instanceof AuthenticationRequest);
         AuthenticationRequest actualAuthRequest = (AuthenticationRequest) actualRequest;
 
-        Assert.assertEquals(actualAuthRequest.getAdditionalHeaders().size(), expectedRequest.getAdditionalHeaders().size());
+        Assert.assertEquals(actualAuthRequest.getAdditionalHeaders().size(),
+                expectedRequest.getAdditionalHeaders().size());
         for (int i = 0; i < expectedRequest.getAdditionalHeaders().size(); i++) {
             Header actualAdditionalHeader = actualAuthRequest.getAdditionalHeaders().get(i);
             Header expectedAdditionalHeader = expectedRequest.getAdditionalHeaders().get(i);
             Assert.assertEquals(actualAdditionalHeader.getName(), expectedAdditionalHeader.getName());
             Assert.assertEquals(actualAdditionalHeader.getValue(), expectedAdditionalHeader.getValue());
         }
-        Assert.assertEquals(actualAuthRequest.getAdditionalParams().size(), expectedRequest.getAdditionalParams().size());
+        Assert.assertEquals(actualAuthRequest.getAdditionalParams().size(),
+                expectedRequest.getAdditionalParams().size());
         for (int i = 0; i < expectedRequest.getAdditionalParams().size(); i++) {
             Param actualAdditionalParam = actualAuthRequest.getAdditionalParams().get(i);
             Param expectedAdditionalParam = expectedRequest.getAdditionalParams().get(i);

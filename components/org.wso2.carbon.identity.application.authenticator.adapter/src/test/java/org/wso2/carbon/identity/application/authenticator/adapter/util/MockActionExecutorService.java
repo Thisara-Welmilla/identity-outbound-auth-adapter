@@ -25,10 +25,10 @@ import org.wso2.carbon.identity.action.execution.model.ActionExecutionStatus;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationErrorResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationFailureResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationSuccessResponse;
+import org.wso2.carbon.identity.action.execution.model.Error;
 import org.wso2.carbon.identity.action.execution.model.Event;
 import org.wso2.carbon.identity.action.execution.model.Failure;
 import org.wso2.carbon.identity.action.execution.model.Success;
-import org.wso2.carbon.identity.action.execution.model.Error;
 import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationResponseProcessor;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
 
@@ -51,7 +51,7 @@ public class MockActionExecutorService {
      * @throws ActionExecutionException
      * @throws ActionExecutionResponseProcessorException
      */
-    public void MockActionExecutorServiceForSuccessResponse(Map<String, Object> eventContext, Event actionEvent,
+    public void mockActionExecutorServiceForSuccessResponse(Map<String, Object> eventContext, Event actionEvent,
                                                             ActionInvocationSuccessResponse successResponse)
             throws ActionExecutionException, ActionExecutionResponseProcessorException {
 
@@ -62,8 +62,8 @@ public class MockActionExecutorService {
         AuthenticatorAdapterDataHolder.getInstance().setActionExecutorService(actionExecutorService);
     }
 
-    private ActionExecutionStatus<Success> actionExecutionForAuthSuccess(Map<String, Object> eventContext, Event actionEvent,
-                                                                         ActionInvocationSuccessResponse successResponse)
+    private ActionExecutionStatus<Success> actionExecutionForAuthSuccess(Map<String, Object> eventContext,
+            Event actionEvent, ActionInvocationSuccessResponse successResponse)
             throws ActionExecutionResponseProcessorException {
 
         return responseProcessor.processSuccessResponse(eventContext, actionEvent, successResponse);
@@ -78,7 +78,7 @@ public class MockActionExecutorService {
      * @throws ActionExecutionException
      * @throws ActionExecutionResponseProcessorException
      */
-    public void MockActionExecutorServiceForFailureResponse(Map<String, Object> eventContext, Event actionEvent,
+    public void mockActionExecutorServiceForFailureResponse(Map<String, Object> eventContext, Event actionEvent,
                                                             ActionInvocationFailureResponse failureResponse)
             throws ActionExecutionException, ActionExecutionResponseProcessorException {
 
@@ -105,7 +105,7 @@ public class MockActionExecutorService {
      * @throws ActionExecutionException
      * @throws ActionExecutionResponseProcessorException
      */
-    public void MockActionExecutorServiceForErrorResponse(Map<String, Object> eventContext, Event actionEvent,
+    public void mockActionExecutorServiceForErrorResponse(Map<String, Object> eventContext, Event actionEvent,
                                                             ActionInvocationErrorResponse errorResponse)
             throws ActionExecutionException, ActionExecutionResponseProcessorException {
 

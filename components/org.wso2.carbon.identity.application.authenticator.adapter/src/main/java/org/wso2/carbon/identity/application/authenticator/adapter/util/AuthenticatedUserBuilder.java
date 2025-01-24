@@ -39,6 +39,9 @@ import org.wso2.carbon.user.core.service.RealmService;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * This is responsible for building the authenticated user object from the authenticated user data.
+ */
 public class AuthenticatedUserBuilder {
 
     private static final Log LOG = LogFactory.getLog(AuthenticatedUserBuilder.class);
@@ -147,7 +150,7 @@ public class AuthenticatedUserBuilder {
             }
         } catch (UserStoreException e) {
             throw new ActionExecutionResponseProcessorException("An error occurs when trying to retrieve the " +
-                    "userStore manager for the given userStore domain name:" +  userStoreDomain, e );
+                    "userStore manager for the given userStore domain name:" +  userStoreDomain, e);
         }
 
         if (StringUtils.isNotBlank(userStoreDomain) && userStoreManager == null) {

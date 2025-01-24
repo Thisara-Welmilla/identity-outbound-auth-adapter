@@ -21,23 +21,26 @@ package org.wso2.carbon.identity.application.authenticator.adapter.internal;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.ComponentContext;
-import org.wso2.carbon.identity.action.execution.ActionExecutionRequestBuilder;
-import org.wso2.carbon.identity.action.execution.ActionExecutionResponseProcessor;
-import org.wso2.carbon.identity.action.execution.ActionExecutorService;
-import org.wso2.carbon.identity.action.execution.ActionInvocationResponseClassProvider;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
+import org.wso2.carbon.identity.action.execution.ActionExecutionRequestBuilder;
+import org.wso2.carbon.identity.action.execution.ActionExecutionResponseProcessor;
+import org.wso2.carbon.identity.action.execution.ActionExecutorService;
+import org.wso2.carbon.identity.action.execution.ActionInvocationResponseClassProvider;
 import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorAdapterService;
 import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationAdapterServiceImp;
-import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationInvocationResponseDeserializer;
+import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationInvocationResponseClassProvider;
 import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationRequestBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationResponseProcessor;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.user.core.service.RealmService;
 
+/**
+ * OSGi declarative services component which handles registration and unregistration of AuthenticatorAdapterService.
+ */
 @Component(
         name = "identity.application.authenticator.adapter",
         immediate = true
@@ -57,7 +60,7 @@ public class AuthenticatorAdapterServiceComponent {
             ctxt.getBundleContext().registerService(ActionExecutionResponseProcessor.class,
                     new AuthenticationResponseProcessor(), null);
             ctxt.getBundleContext().registerService(ActionInvocationResponseClassProvider.class,
-                    new AuthenticationInvocationResponseDeserializer(), null);
+                    new AuthenticationInvocationResponseClassProvider(), null);
 
             if (log.isDebugEnabled()) {
                 log.debug("Authentication adapter bundle is activated");
