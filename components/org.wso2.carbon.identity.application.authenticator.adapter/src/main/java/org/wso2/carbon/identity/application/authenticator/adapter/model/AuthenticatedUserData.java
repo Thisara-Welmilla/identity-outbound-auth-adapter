@@ -44,7 +44,6 @@ public class AuthenticatedUserData implements ResponseData {
         @JsonProperty("userStore")
         private UserStore userStore;
 
-        // No-argument constructor for Jackson
         public User() {
         }
 
@@ -88,7 +87,6 @@ public class AuthenticatedUserData implements ResponseData {
         @JsonProperty("value")
         private String value;
 
-        // No-argument constructor for Jackson
         public Claim() {
         }
 
@@ -120,7 +118,6 @@ public class AuthenticatedUserData implements ResponseData {
         @JsonProperty("name")
         private String name;
 
-        // No-argument constructor for Jackson
         public UserStore() {
         }
 

@@ -25,12 +25,13 @@ import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorC
 import org.wso2.carbon.identity.application.common.model.LocalAuthenticatorConfig;
 
 /**
- * This is the service class for handling the Authenticator Adapters.
+ * This is the authenticator adapter service implementation class to create ApplicationAuthenticator instance for the
+ * give application authenticator configuration.
  */
 public class AuthenticationAdapterServiceImp implements AuthenticatorAdapterService {
 
     /**
-     * Create nre Federated Authenticator Adapter for given configurations.
+     * Provide new FederatedApplicationAuthenticator for given federated authenticator configuration.
      *
      * @param config    Federated Authenticator Configuration.
      * @return  FederatedAuthenticatorAdapter instance.
@@ -42,7 +43,7 @@ public class AuthenticationAdapterServiceImp implements AuthenticatorAdapterServ
     }
 
     /**
-     * Create nre local Authenticator Adapter for given configurations.
+     * Provide new LocalApplicationAuthenticator for given local authenticator configuration.
      *
      * @param config    Local Authenticator Configuration.
      * @return  LocalAuthenticatorAdapter instance.

@@ -63,7 +63,7 @@ public class AuthenticatorAdapterServiceComponent {
                     new AuthenticationInvocationResponseClassProvider(), null);
 
             if (log.isDebugEnabled()) {
-                log.debug("Authentication adapter bundle is activated");
+                log.debug("The Authentication adapter bundle is activated.");
             }
         } catch (Throwable e) {
             log.fatal("Error while activating Authentication adapter.", e);
@@ -85,8 +85,8 @@ public class AuthenticatorAdapterServiceComponent {
 
     protected void unregisterActionExecutorService(ActionExecutorService actionExecutorService) {
 
-        AuthenticatorAdapterDataHolder.getInstance().setActionExecutorService(null);
         log.debug("Unregistering the ActionExecutorService in AuthenticatorAdapterServiceComponent.");
+        AuthenticatorAdapterDataHolder.getInstance().setActionExecutorService(null);
     }
 
     @Reference(
@@ -98,14 +98,14 @@ public class AuthenticatorAdapterServiceComponent {
     )
     protected void setOrganizationManager(OrganizationManager organizationManager) {
 
+        log.debug("Registering the organization management service in AuthenticatorAdapterServiceComponent.");
         AuthenticatorAdapterDataHolder.getInstance().setOrganizationManager(organizationManager);
-        log.debug("Set the organization management service in AuthenticatorAdapterServiceComponent.");
     }
 
     protected void unsetOrganizationManager(OrganizationManager organizationManager) {
 
+        log.debug("Unregistering organization management service in AuthenticatorAdapterServiceComponent.");
         AuthenticatorAdapterDataHolder.getInstance().setOrganizationManager(null);
-        log.debug("Unset organization management service in AuthenticatorAdapterServiceComponent.");
     }
 
     @Reference(
@@ -117,17 +117,13 @@ public class AuthenticatorAdapterServiceComponent {
     )
     protected void setRealmService(RealmService realmService) {
 
-        if (log.isDebugEnabled()) {
-            log.debug("Setting the Realm Service in AuthenticatorAdapterServiceComponent.");
-        }
+        log.debug("Registering the Realm Service in AuthenticatorAdapterServiceComponent.");
         AuthenticatorAdapterDataHolder.getInstance().setRealmService(realmService);
     }
 
     protected void unsetRealmService(RealmService realmService) {
 
-        if (log.isDebugEnabled()) {
-            log.debug("Unsetting the Realm Service in AuthenticatorAdapterServiceComponent.");
-        }
+        log.debug("Unregistering the Realm Service in AuthenticatorAdapterServiceComponent.");
         AuthenticatorAdapterDataHolder.getInstance().setRealmService(null);
     }
 }

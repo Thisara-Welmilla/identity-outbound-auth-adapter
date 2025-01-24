@@ -6,7 +6,7 @@ import org.wso2.carbon.identity.action.execution.model.ResponseData;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
 
 /**
- * This class provides the response context class for the authentication action.
+ * This class provide classes for the action invocation responses defined for the AUTHENTICATION action type.
  */
 public class AuthenticationInvocationResponseClassProvider implements ActionInvocationResponseClassProvider {
 
