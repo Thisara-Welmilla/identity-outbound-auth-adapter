@@ -43,9 +43,9 @@ import org.wso2.carbon.identity.application.authenticator.adapter.internal.Authe
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatingUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationRequest;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationRequestEvent;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedTestUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.EventContextBuilder;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticatedTestUserBuilder;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.TestEventContextBuilder;
 import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
@@ -60,7 +60,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 import static org.wso2.carbon.base.MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
-import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedTestUserBuilder.AuthenticatedUserConstants;
+import static org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticatedTestUserBuilder.AuthenticatedUserConstants;
 
 public class AuthenticationRequestBuilderTest {
 
@@ -78,7 +78,7 @@ public class AuthenticationRequestBuilderTest {
     public void setUp() throws OrganizationManagementException {
 
         authenticationRequestBuilder = new AuthenticationRequestBuilder();
-        authHistory = EventContextBuilder.buildAuthHistory();
+        authHistory = TestEventContextBuilder.buildAuthHistory();
 
         OrganizationManager organizationManager = mock(OrganizationManager.class);
         when(organizationManager.getOrganizationNameById(anyString())).thenReturn(AuthenticatedUserConstants.ORG_NAME);
@@ -109,23 +109,23 @@ public class AuthenticationRequestBuilderTest {
     public Object[][] eventContextDataProvider() throws UserIdNotFoundException {
 
         // Custom authenticator engaging in 1st step of authentication flow.
-        Map<String, Object> eventContextForNoUser = new EventContextBuilder(
+        Map<String, Object> eventContextForNoUser = new TestEventContextBuilder(
                  null, SUPER_TENANT_DOMAIN_NAME, headers, parameters, new ArrayList<>())
                 .getEventContext();
         AuthenticationRequestEvent expectedEventForNoUser = getExpectedEvent(null);
 
         // Custom authenticator engaging in 2nd step of authentication flow with Local authenticated user.
-        AuthenticatedUser localUser = AuthenticatedTestUserBuilder.createAuthenticatedUser(
+        AuthenticatedUser localUser = TestAuthenticatedTestUserBuilder.createAuthenticatedUser(
                 AuthenticatedUserConstants.LOCAL_USER_PREFIX, SUPER_TENANT_DOMAIN_NAME);
-        Map<String, Object> eventContextForLocalUser = new EventContextBuilder(
+        Map<String, Object> eventContextForLocalUser = new TestEventContextBuilder(
                 localUser, SUPER_TENANT_DOMAIN_NAME, headers, parameters, authHistory)
                 .getEventContext();
         AuthenticationRequestEvent expectedEventForLocalUser = getExpectedEvent(localUser);
 
         // Custom authenticator engaging in 2nd step of authentication flow with federated authenticated user.
-        AuthenticatedUser fedUser = AuthenticatedTestUserBuilder.createAuthenticatedUser(
+        AuthenticatedUser fedUser = TestAuthenticatedTestUserBuilder.createAuthenticatedUser(
                 AuthenticatedUserConstants.LOCAL_USER_PREFIX, SUPER_TENANT_DOMAIN_NAME);
-        Map<String, Object> eventContextForFedUser = new EventContextBuilder(
+        Map<String, Object> eventContextForFedUser = new TestEventContextBuilder(
                 fedUser, SUPER_TENANT_DOMAIN_NAME, headers, parameters, authHistory)
                 .getEventContext();
         AuthenticationRequestEvent expectedEventForFedUser = getExpectedEvent(fedUser);
@@ -143,7 +143,7 @@ public class AuthenticationRequestBuilderTest {
         ActionExecutionRequest actionExecutionRequest =
                 authenticationRequestBuilder.buildActionExecutionRequest(eventContext);
         Assert.assertNotNull(actionExecutionRequest);
-        Assert.assertEquals(actionExecutionRequest.getFlowId(), EventContextBuilder.FLOW_ID);
+        Assert.assertEquals(actionExecutionRequest.getFlowId(), TestEventContextBuilder.FLOW_ID);
         Assert.assertEquals(actionExecutionRequest.getActionType(), ActionType.AUTHENTICATION);
         assertEvent(actionExecutionRequest.getEvent(), expectedEvent);
         assertAllowedOperations(actionExecutionRequest.getAllowedOperations());
@@ -215,7 +215,7 @@ public class AuthenticationRequestBuilderTest {
 
         AuthenticationRequestEvent.Builder eventBuilder = new AuthenticationRequestEvent.Builder();
         eventBuilder.tenant(new Tenant(String.valueOf(TENANT_ID_TEST), TENANT_DOMAIN_TEST));
-        eventBuilder.application(new Application(EventContextBuilder.SP_ID, EventContextBuilder.SP_NAME));
+        eventBuilder.application(new Application(TestEventContextBuilder.SP_ID, TestEventContextBuilder.SP_NAME));
         eventBuilder.organization(
                 new Organization(AuthenticatedUserConstants.ORG_ID, AuthenticatedUserConstants.ORG_NAME));
         List<Header> headers = new ArrayList<>();

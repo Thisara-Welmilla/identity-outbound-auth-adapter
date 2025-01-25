@@ -30,7 +30,7 @@ import org.wso2.carbon.identity.action.execution.ActionExecutionRequestBuilder;
 import org.wso2.carbon.identity.action.execution.ActionExecutionResponseProcessor;
 import org.wso2.carbon.identity.action.execution.ActionExecutorService;
 import org.wso2.carbon.identity.action.execution.ActionInvocationResponseClassProvider;
-import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorAdapterService;
+import org.wso2.carbon.identity.application.authentication.framework.UserDefinedAuthenticatorService;
 import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationAdapterServiceImp;
 import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationInvocationResponseClassProvider;
 import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationRequestBuilder;
@@ -39,7 +39,7 @@ import org.wso2.carbon.identity.organization.management.service.OrganizationMana
 import org.wso2.carbon.user.core.service.RealmService;
 
 /**
- * OSGi declarative services component which handles registration and unregistration of AuthenticatorAdapterService.
+ * OSGi declarative services component which handles registration and unregistration of UserDefinedAuthenticatorService.
  */
 @Component(
         name = "identity.application.authenticator.adapter",
@@ -53,7 +53,7 @@ public class AuthenticatorAdapterServiceComponent {
     protected void activate(ComponentContext ctxt) {
 
         try {
-            ctxt.getBundleContext().registerService(AuthenticatorAdapterService.class,
+            ctxt.getBundleContext().registerService(UserDefinedAuthenticatorService.class,
                     new AuthenticationAdapterServiceImp(), null);
             ctxt.getBundleContext().registerService(ActionExecutionRequestBuilder.class,
                     new AuthenticationRequestBuilder(), null);

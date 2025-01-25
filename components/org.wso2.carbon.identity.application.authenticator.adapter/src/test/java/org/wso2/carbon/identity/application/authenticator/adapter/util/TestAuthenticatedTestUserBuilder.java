@@ -20,7 +20,7 @@ package org.wso2.carbon.identity.application.authenticator.adapter.util;
 
  import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 
- public class AuthenticatedTestUserBuilder {
+ public class TestAuthenticatedTestUserBuilder {
 
      public static class AuthenticatedUserConstants {
 

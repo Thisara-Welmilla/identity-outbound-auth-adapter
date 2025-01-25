@@ -33,7 +33,7 @@ import org.wso2.carbon.identity.application.authenticator.adapter.model.Authenti
 import java.util.ArrayList;
 import java.util.List;
 
-public class ActionInvocationResponseBuilder {
+public class TestActionInvocationResponseBuilder {
 
     /**
      * Build an action invocation error response.

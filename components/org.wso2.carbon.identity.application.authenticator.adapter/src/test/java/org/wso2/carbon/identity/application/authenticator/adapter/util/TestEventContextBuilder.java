@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class EventContextBuilder {
+public class TestEventContextBuilder {
 
     Map<String, Object> eventContext = new HashMap<>();
     public static final String SP_ID = "spId";
@@ -47,9 +47,9 @@ public class EventContextBuilder {
      * @param headers           Headers.
      * @param parameters        Parameters.
      */
-    public EventContextBuilder(AuthenticatedUser authenticatedUser, String tenantDomain,
-                               Map<String, String> headers, Map<String, String> parameters,
-                               ArrayList<AuthHistory> authHistory) {
+    public TestEventContextBuilder(AuthenticatedUser authenticatedUser, String tenantDomain,
+                                   Map<String, String> headers, Map<String, String> parameters,
+                                   ArrayList<AuthHistory> authHistory) {
 
         eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, buildAuthenticationRequest(headers, parameters));
         eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, buildAuthenticationContext(authenticatedUser,

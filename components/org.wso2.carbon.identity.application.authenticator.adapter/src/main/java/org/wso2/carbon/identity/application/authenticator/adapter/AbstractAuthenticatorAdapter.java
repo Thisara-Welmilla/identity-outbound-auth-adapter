@@ -48,7 +48,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAuthenticator {
 
-    private static final Log log = LogFactory.getLog(AbstractAuthenticatorAdapter.class);
+    private static final Log LOG = LogFactory.getLog(AbstractAuthenticatorAdapter.class);
     protected String authenticatorName;
     protected String friendlyName;
 
@@ -97,8 +97,8 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
             ActionExecutionStatus executionStatus =
                     AuthenticatorAdapterDataHolder.getInstance().getActionExecutorService()
                             .execute(ActionType.AUTHENTICATION, actionId, eventContext, tenantDomain);
-            if (log.isDebugEnabled()) {
-                log.debug(String.format(
+            if (LOG.isDebugEnabled()) {
+                LOG.debug(String.format(
                         "Invoked authentication action for Authentication flow ID: %s. Status: %s",
                         eventContext.get(AuthenticatorAdapterConstants.FLOW_ID),
                         Optional.ofNullable(executionStatus).isPresent() ? executionStatus.getStatus() : "NA"));
@@ -170,7 +170,10 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
 
     @Override
     protected boolean retryAuthenticationEnabled() {
-        return true;
+
+        /* The external server must handle the retry at authentication failure and after authentication with external
+         service completed call back to the IS. */
+        return false;
     }
 
     @Override
