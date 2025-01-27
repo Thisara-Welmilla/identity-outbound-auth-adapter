@@ -50,7 +50,6 @@ import org.wso2.carbon.identity.organization.management.service.exception.Organi
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
@@ -154,20 +153,6 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
 
         List<Header> additionalHeaders = new ArrayList<>();
         List<Param> additionalParams = new ArrayList<>();
-
-        Enumeration<String> headers = request.getHeaderNames();
-        while (headers.hasMoreElements()) {
-            String headerElement = headers.nextElement();
-            Header header = new Header(headerElement, new String[]{request.getHeader(headerElement)});
-            additionalHeaders.add(header);
-        }
-
-        Enumeration<String> requestParameters = request.getParameterNames();
-        while (requestParameters.hasMoreElements()) {
-            String paramElement = requestParameters.nextElement();
-            Param param = new Param(paramElement, new String[]{request.getParameter(paramElement)});
-            additionalParams.add(param);
-        }
 
         return new AuthenticationRequest(additionalHeaders, additionalParams);
     }

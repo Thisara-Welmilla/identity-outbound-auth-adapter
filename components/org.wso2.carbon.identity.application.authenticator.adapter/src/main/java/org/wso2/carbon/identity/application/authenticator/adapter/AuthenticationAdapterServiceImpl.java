@@ -28,7 +28,7 @@ import org.wso2.carbon.identity.application.common.model.UserDefinedLocalAuthent
  * This is the authenticator adapter service implementation class to create ApplicationAuthenticator instance for the
  * give application authenticator configuration.
  */
-public class AuthenticationAdapterServiceImp implements UserDefinedAuthenticatorService {
+public class AuthenticationAdapterServiceImpl implements UserDefinedAuthenticatorService {
 
     /**
      * Provide new FederatedApplicationAuthenticator for given federated authenticator configuration.

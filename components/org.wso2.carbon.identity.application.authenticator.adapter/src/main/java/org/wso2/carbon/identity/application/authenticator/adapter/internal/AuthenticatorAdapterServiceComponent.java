@@ -31,7 +31,7 @@ import org.wso2.carbon.identity.action.execution.ActionExecutionResponseProcesso
 import org.wso2.carbon.identity.action.execution.ActionExecutorService;
 import org.wso2.carbon.identity.action.execution.ActionInvocationResponseClassProvider;
 import org.wso2.carbon.identity.application.authentication.framework.UserDefinedAuthenticatorService;
-import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationAdapterServiceImp;
+import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationAdapterServiceImpl;
 import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationInvocationResponseClassProvider;
 import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationRequestBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationResponseProcessor;
@@ -54,7 +54,7 @@ public class AuthenticatorAdapterServiceComponent {
 
         try {
             ctxt.getBundleContext().registerService(UserDefinedAuthenticatorService.class,
-                    new AuthenticationAdapterServiceImp(), null);
+                    new AuthenticationAdapterServiceImpl(), null);
             ctxt.getBundleContext().registerService(ActionExecutionRequestBuilder.class,
                     new AuthenticationRequestBuilder(), null);
             ctxt.getBundleContext().registerService(ActionExecutionResponseProcessor.class,

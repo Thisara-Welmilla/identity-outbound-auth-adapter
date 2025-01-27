@@ -187,22 +187,8 @@ public class AuthenticationRequestBuilderTest {
         Assert.assertTrue(actualRequest instanceof AuthenticationRequest);
         AuthenticationRequest actualAuthRequest = (AuthenticationRequest) actualRequest;
 
-        Assert.assertEquals(actualAuthRequest.getAdditionalHeaders().size(),
-                expectedRequest.getAdditionalHeaders().size());
-        for (int i = 0; i < expectedRequest.getAdditionalHeaders().size(); i++) {
-            Header actualAdditionalHeader = actualAuthRequest.getAdditionalHeaders().get(i);
-            Header expectedAdditionalHeader = expectedRequest.getAdditionalHeaders().get(i);
-            Assert.assertEquals(actualAdditionalHeader.getName(), expectedAdditionalHeader.getName());
-            Assert.assertEquals(actualAdditionalHeader.getValue(), expectedAdditionalHeader.getValue());
-        }
-        Assert.assertEquals(actualAuthRequest.getAdditionalParams().size(),
-                expectedRequest.getAdditionalParams().size());
-        for (int i = 0; i < expectedRequest.getAdditionalParams().size(); i++) {
-            Param actualAdditionalParam = actualAuthRequest.getAdditionalParams().get(i);
-            Param expectedAdditionalParam = expectedRequest.getAdditionalParams().get(i);
-            Assert.assertEquals(actualAdditionalParam.getName(), expectedAdditionalParam.getName());
-            Assert.assertEquals(actualAdditionalParam.getValue(), expectedAdditionalParam.getValue());
-        }
+        Assert.assertEquals(actualAuthRequest.getAdditionalHeaders().size(), 0);
+        Assert.assertEquals(actualAuthRequest.getAdditionalParams().size(), 0);
     }
 
     private void assertAllowedOperations(List<AllowedOperation> allowedOperationList) {
