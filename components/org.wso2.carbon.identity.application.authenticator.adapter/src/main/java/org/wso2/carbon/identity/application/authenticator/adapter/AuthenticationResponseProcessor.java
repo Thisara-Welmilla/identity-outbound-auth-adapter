@@ -71,6 +71,10 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
             ActionInvocationSuccessResponse actionInvocationSuccessResponse)
             throws ActionExecutionResponseProcessorException {
 
+        /* TODO: 1. Validate whether authenticated user data are present in the action invocation response for the
+            IDENTIFIER local authenticators and Federated authenticators.
+            2. Move this code logic to the processAuthenticationResponse method in the AbstractAuthenticatorAdapter.
+         */
         AuthenticationContext context = (AuthenticationContext) eventContext.get(
                 AuthenticatorAdapterConstants.AUTH_CONTEXT);
         AuthenticatedUserData authenticatedUserData = (AuthenticatedUserData) actionInvocationSuccessResponse.getData();

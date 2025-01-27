@@ -28,7 +28,6 @@ import org.wso2.carbon.identity.application.authentication.framework.Authenticat
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
-import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.common.model.Property;
@@ -67,6 +66,8 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
             return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
         }
 
+        /* TODO: Catch AuthenticationFailedException error and continue with super.process, and handle error at
+            processAuthenticationResponse method. */
         context.removeProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
         Map<String, Object> eventContext = new HashMap<>();
         eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
@@ -76,9 +77,6 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
         context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME, executionStatus);
 
         if (executionStatus.getStatus() == ActionExecutionStatus.Status.INCOMPLETE) {
-            if (authenticatorName.equals(context.getProperty(FrameworkConstants.LAST_FAILED_AUTHENTICATOR))) {
-                context.setRetrying(true);
-            }
             context.setCurrentAuthenticator(getName());
             context.setRetrying(false);
             return AuthenticatorFlowStatus.INCOMPLETE;
@@ -146,8 +144,12 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
 
         ActionExecutionStatus executionStatus = (ActionExecutionStatus)
                 context.getProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
-        if (executionStatus.getStatus() == ActionExecutionStatus.Status.FAILED) {
-            throw new AuthenticationFailedException("dwqdqwdqwdqwdq");
+        if (executionStatus.getStatus() == ActionExecutionStatus.Status.FAILED ||
+                executionStatus.getStatus() == ActionExecutionStatus.Status.ERROR) {
+            /* TODO: Improve AuthenticationFailedException error messages and description with specific error content
+                from the authentication action execution. */
+            throw new AuthenticationFailedException("An error occurred while authenticating with user the " +
+                    " external authentication authentication service.");
         }
     }
 
