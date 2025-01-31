@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.util;
 
+import org.wso2.carbon.identity.application.authentication.framework.config.model.SequenceConfig;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.StepConfig;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
@@ -39,6 +41,7 @@ public class TestEventContextBuilder {
     public static final String SP_ID = "spId";
     public static final String SP_NAME = "spName";
     public static final String FLOW_ID = "flow-id";
+    public static final String ACTION_ID = "action-id";
 
     /**
      * Constructor for EventContextBuilder.
@@ -47,13 +50,14 @@ public class TestEventContextBuilder {
      * @param headers           Headers.
      * @param parameters        Parameters.
      */
-    public TestEventContextBuilder(AuthenticatedUser authenticatedUser, String tenantDomain,
-                                   Map<String, String> headers, Map<String, String> parameters,
-                                   ArrayList<AuthHistory> authHistory) {
+    public Map<String, Object> buildEventContext(AuthenticatedUser authenticatedUser, String tenantDomain,
+                                          Map<String, String> headers, Map<String, String> parameters,
+                                          ArrayList<AuthHistory> authHistory) {
 
         eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, buildAuthenticationRequest(headers, parameters));
         eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, buildAuthenticationContext(authenticatedUser,
                 tenantDomain, authHistory));
+        return eventContext;
     }
 
     /**
@@ -106,7 +110,7 @@ public class TestEventContextBuilder {
         return authHistory;
     }
 
-    private AuthenticationContext buildAuthenticationContext(AuthenticatedUser authenticatedUser, String tenantDomain,
+    public AuthenticationContext buildAuthenticationContext(AuthenticatedUser authenticatedUser, String tenantDomain,
                                                              ArrayList<AuthHistory> authHistory) {
 
         AuthenticationContext authenticationContext = new AuthenticationContext();
@@ -117,7 +121,24 @@ public class TestEventContextBuilder {
         authenticationContext.setCurrentStep(authHistory.size() + 1);
         authenticationContext.setServiceProviderName(SP_NAME);
         authenticationContext.setServiceProviderResourceId(SP_ID);
+        authenticationContext.setSequenceConfig(buildSequenceConfig());
+        authenticationContext.setAuthenticatorProperties(new HashMap<String, String>() {{
+            put(AuthenticatorAdapterConstants.ACTION_ID_CONFIG, ACTION_ID);
+        }});
         return authenticationContext;
+    }
+
+    private SequenceConfig buildSequenceConfig() {
+
+        StepConfig stepConfig1 = new StepConfig();
+        StepConfig stepConfig2 = new StepConfig();
+        Map<Integer, StepConfig> stepMap = new HashMap<>();
+        stepMap.put(1, stepConfig1);
+        stepMap.put(2, stepConfig2);
+
+        SequenceConfig sequenceConfig = new SequenceConfig();
+        sequenceConfig.setStepMap(stepMap);
+        return sequenceConfig;
     }
 
     /**

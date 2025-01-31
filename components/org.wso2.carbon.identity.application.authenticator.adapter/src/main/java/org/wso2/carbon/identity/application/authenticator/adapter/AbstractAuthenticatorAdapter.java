@@ -28,7 +28,10 @@ import org.wso2.carbon.identity.application.authentication.framework.Authenticat
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
+import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants;
@@ -50,6 +53,7 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     private static final Log LOG = LogFactory.getLog(AbstractAuthenticatorAdapter.class);
     protected String authenticatorName;
     protected String friendlyName;
+    protected AuthenticatorPropertyConstants.AuthenticationType authenticationType;
 
     @Override
     public boolean canHandle(HttpServletRequest request) {
@@ -62,27 +66,30 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
                                            AuthenticationContext context)
             throws AuthenticationFailedException, LogoutFailedException {
 
-        if (context.isLogoutRequest()) {
-            return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
+        try {
+            if (context.isLogoutRequest()) {
+                return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
+            }
+
+            Map<String, Object> eventContext = new HashMap<>();
+            eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
+            eventContext.put(AuthenticatorAdapterConstants.AUTH_RESPONSE, response);
+            eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, context);
+
+            ActionExecutionStatus executionStatus = executeAction(context, eventContext, context.getTenantDomain());
+            context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME, executionStatus);
+
+            if (executionStatus.getStatus() == ActionExecutionStatus.Status.INCOMPLETE) {
+                context.setCurrentAuthenticator(getName());
+                context.setRetrying(false);
+                return AuthenticatorFlowStatus.INCOMPLETE;
+            }
+
+            return super.process(request, response, context);
+        } finally {
+            context.removeProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
+            context.removeProperty(AuthenticatorAdapterConstants.AUTHENTICATED_USER_DATA);
         }
-
-        /* TODO: Catch AuthenticationFailedException error and continue with super.process, and handle error at
-            processAuthenticationResponse method. */
-        context.removeProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
-        Map<String, Object> eventContext = new HashMap<>();
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_RESPONSE, response);
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, context);
-        ActionExecutionStatus executionStatus = executeAction(context, eventContext, context.getTenantDomain());
-        context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME, executionStatus);
-
-        if (executionStatus.getStatus() == ActionExecutionStatus.Status.INCOMPLETE) {
-            context.setCurrentAuthenticator(getName());
-            context.setRetrying(false);
-            return AuthenticatorFlowStatus.INCOMPLETE;
-        }
-
-        return super.process(request, response, context);
     }
 
     private ActionExecutionStatus executeAction(AuthenticationContext context, Map<String, Object> eventContext,
@@ -119,6 +126,11 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
         return authenticatorName;
     }
 
+    public AuthenticatorPropertyConstants.AuthenticationType getAuthenticationType() {
+
+        return authenticationType;
+    }
+
     @Override
     public String getClaimDialectURI() {
 
@@ -150,6 +162,18 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
                 from the authentication action execution. */
             throw new AuthenticationFailedException("An error occurred while authenticating with user the " +
                     " external authentication authentication service.");
+        } else if (executionStatus.getStatus() == ActionExecutionStatus.Status.SUCCESS) {
+            if (context.getProperty(AuthenticatorAdapterConstants.AUTHENTICATED_USER_DATA) == null) {
+                if (AuthenticatorPropertyConstants.AuthenticationType.VERIFICATION.equals(getAuthenticationType())) {
+                    throw new AuthenticationFailedException("Authenticated user data is not found in the response.");
+                }
+                context.setSubject(context.getLastAuthenticatedUser());
+            }
+            AuthenticatedUserData authenticatedUserData = (AuthenticatedUserData)
+                    context.getProperty(AuthenticatorAdapterConstants.AUTHENTICATED_USER_DATA);
+            AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(authenticatedUserData, context)
+                    .buildAuthenticateduser();
+            context.setSubject(authenticatedUser);
         }
     }
 
