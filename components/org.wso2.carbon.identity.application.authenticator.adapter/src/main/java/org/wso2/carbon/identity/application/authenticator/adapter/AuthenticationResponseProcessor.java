@@ -41,9 +41,6 @@ import org.wso2.carbon.identity.action.execution.model.PerformableOperation;
 import org.wso2.carbon.identity.action.execution.model.Success;
 import org.wso2.carbon.identity.action.execution.model.SuccessStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
-import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 
 import java.io.IOException;
@@ -77,10 +74,8 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
          */
         AuthenticationContext context = (AuthenticationContext) eventContext.get(
                 AuthenticatorAdapterConstants.AUTH_CONTEXT);
-        AuthenticatedUserData authenticatedUserData = (AuthenticatedUserData) actionInvocationSuccessResponse.getData();
-        AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(authenticatedUserData, context)
-                .buildAuthenticateduser();
-        context.setSubject(authenticatedUser);
+        context.setProperty(AuthenticatorAdapterConstants.AUTHENTICATED_USER_DATA,
+                actionInvocationSuccessResponse.getData());
 
         return new SuccessStatus.Builder().setResponseContext(eventContext).build();
     }

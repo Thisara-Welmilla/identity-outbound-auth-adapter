@@ -25,7 +25,7 @@ public class AuthenticatorAdapterConstants {
 
     public static final String AUTHENTICATOR_NAME = "AbstractAuthenticatorAdapter";
     public static final String WSO2_CLAIM_DIALECT = "http://wso2.org/claims";
-    public static final String EXTERNAL_ID_CLAIM = "http://wso2.org/claims/externalID";
+    public static final String USERNAME_CLAIM = "http://wso2.org/claims/username";
     public static final String AUTH_REQUEST = "authenticationRequest";
     public static final String AUTH_RESPONSE = "authenticationResponse";
     public static final String AUTH_CONTEXT = "authContext";
@@ -34,6 +34,7 @@ public class AuthenticatorAdapterConstants {
     public static final String LOCAL_IDP = "LOCAL";
     public static final String FED_IDP = "FEDERATED";
     public static final String EXECUTION_STATUS_PROP_NAME = "actionExecutionStatus";
+    public static final String AUTHENTICATED_USER_DATA = "authenticatedUserData";
 
     /**
      * User Type of the authenticated user communicated with the external authentication service.
