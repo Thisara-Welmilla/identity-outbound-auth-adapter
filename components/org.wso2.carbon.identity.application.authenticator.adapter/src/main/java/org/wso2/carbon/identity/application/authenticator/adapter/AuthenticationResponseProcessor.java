@@ -41,7 +41,12 @@ import org.wso2.carbon.identity.action.execution.model.PerformableOperation;
 import org.wso2.carbon.identity.action.execution.model.Success;
 import org.wso2.carbon.identity.action.execution.model.SuccessStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
+import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
+import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants;
 
 import java.io.IOException;
 import java.util.List;
@@ -68,14 +73,21 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
             ActionInvocationSuccessResponse actionInvocationSuccessResponse)
             throws ActionExecutionResponseProcessorException {
 
-        /* TODO: 1. Validate whether authenticated user data are present in the action invocation response for the
-            IDENTIFIER local authenticators and Federated authenticators.
-            2. Move this code logic to the processAuthenticationResponse method in the AbstractAuthenticatorAdapter.
-         */
         AuthenticationContext context = (AuthenticationContext) eventContext.get(
                 AuthenticatorAdapterConstants.AUTH_CONTEXT);
-        context.setProperty(AuthenticatorAdapterConstants.AUTHENTICATED_USER_DATA,
-                actionInvocationSuccessResponse.getData());
+        AuthenticatorPropertyConstants.AuthenticationType authType = (AuthenticatorPropertyConstants.AuthenticationType)
+                eventContext.get(AuthenticatorAdapterConstants.AUTH_TYPE);
+        if (actionInvocationSuccessResponse.getData() == null) {
+            if (AuthenticatorPropertyConstants.AuthenticationType.IDENTIFICATION.equals(authType)) {
+                throw new ActionExecutionResponseProcessorException("The authenticated user data is not found in the " +
+                        "action response from the authentication extension.");
+            }
+            context.setSubject(context.getLastAuthenticatedUser());
+        }
+        AuthenticatedUserData authenticatedUserData = (AuthenticatedUserData) actionInvocationSuccessResponse.getData();
+        AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(authenticatedUserData, context)
+                .buildAuthenticateduser();
+        context.setSubject(authenticatedUser);
 
         return new SuccessStatus.Builder().setResponseContext(eventContext).build();
     }
@@ -135,6 +147,11 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
                                                       ActionInvocationFailureResponse failureResponse) throws
             ActionExecutionResponseProcessorException {
 
+        AuthenticationContext context = (AuthenticationContext) eventContext.get(
+                AuthenticatorAdapterConstants.AUTH_CONTEXT);
+        context.setProperty(FrameworkConstants.AUTH_ERROR_CODE, failureResponse.getFailureReason());
+        context.setProperty(FrameworkConstants.AUTH_ERROR_MSG, failureResponse.getFailureDescription());
+
         return new FailedStatus(new Failure(failureResponse.getFailureReason(),
                 failureResponse.getFailureDescription()));
     }
@@ -144,6 +161,11 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
                                                              Event actionEvent,
                                                              ActionInvocationErrorResponse errorResponse) throws
             ActionExecutionResponseProcessorException {
+
+        AuthenticationContext context = (AuthenticationContext) eventContext.get(
+                AuthenticatorAdapterConstants.AUTH_CONTEXT);
+        context.setProperty(FrameworkConstants.AUTH_ERROR_CODE, errorResponse.getErrorMessage());
+        context.setProperty(FrameworkConstants.AUTH_ERROR_MSG, errorResponse.getErrorDescription());
 
         return new ErrorStatus(new Error(errorResponse.getErrorMessage(), errorResponse.getErrorDescription()));
     }

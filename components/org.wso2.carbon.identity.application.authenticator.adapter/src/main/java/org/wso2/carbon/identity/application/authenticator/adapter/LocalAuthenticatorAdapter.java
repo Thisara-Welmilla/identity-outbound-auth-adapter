@@ -34,6 +34,8 @@ public class LocalAuthenticatorAdapter extends AbstractAuthenticatorAdapter impl
 
         authenticatorName = config.getName();
         friendlyName = config.getDisplayName();
-        authenticationType = ((UserDefinedLocalAuthenticatorConfig) config).getAuthenticationType();
+        if (config instanceof UserDefinedLocalAuthenticatorConfig) {
+            authenticationType = ((UserDefinedLocalAuthenticatorConfig) config).getAuthenticationType();
+        }
     }
 }

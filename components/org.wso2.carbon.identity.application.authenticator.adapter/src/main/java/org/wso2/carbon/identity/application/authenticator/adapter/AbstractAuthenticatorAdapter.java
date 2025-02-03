@@ -27,11 +27,10 @@ import org.wso2.carbon.identity.application.authentication.framework.AbstractApp
 import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
+import org.wso2.carbon.identity.application.authentication.framework.exception.InvalidCredentialsException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
-import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
+import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants;
@@ -53,7 +52,8 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     private static final Log LOG = LogFactory.getLog(AbstractAuthenticatorAdapter.class);
     protected String authenticatorName;
     protected String friendlyName;
-    protected AuthenticatorPropertyConstants.AuthenticationType authenticationType;
+    protected AuthenticatorPropertyConstants.AuthenticationType authenticationType = AuthenticatorPropertyConstants
+            .AuthenticationType.IDENTIFICATION;
 
     @Override
     public boolean canHandle(HttpServletRequest request) {
@@ -75,9 +75,9 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
             eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
             eventContext.put(AuthenticatorAdapterConstants.AUTH_RESPONSE, response);
             eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, context);
+            eventContext.put(AuthenticatorAdapterConstants.AUTH_TYPE, getAuthenticationType());
 
             ActionExecutionStatus executionStatus = executeAction(context, eventContext, context.getTenantDomain());
-            context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME, executionStatus);
 
             if (executionStatus.getStatus() == ActionExecutionStatus.Status.INCOMPLETE) {
                 context.setCurrentAuthenticator(getName());
@@ -86,32 +86,32 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
             }
 
             return super.process(request, response, context);
+        } catch (ActionExecutionException e) {
+            context.setProperty(FrameworkConstants.AUTH_ERROR_CODE, e.getMessage());
+            context.setProperty(FrameworkConstants.AUTH_ERROR_MSG, "An error occurred while authenticating user" +
+                    " with the external authentication authentication service.");
+            return super.process(request, response, context);
         } finally {
             context.removeProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
-            context.removeProperty(AuthenticatorAdapterConstants.AUTHENTICATED_USER_DATA);
         }
     }
 
     private ActionExecutionStatus executeAction(AuthenticationContext context, Map<String, Object> eventContext,
-                                                String tenantDomain) throws AuthenticationFailedException {
+                                                String tenantDomain) throws ActionExecutionException {
 
         Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
         String actionId = authenticatorProperties.get(AuthenticatorAdapterConstants.ACTION_ID_CONFIG);
 
-        try {
-            ActionExecutionStatus executionStatus =
-                    AuthenticatorAdapterDataHolder.getInstance().getActionExecutorService()
-                            .execute(ActionType.AUTHENTICATION, actionId, eventContext, tenantDomain);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug(String.format(
-                        "Invoked authentication action for Authentication flow ID: %s. Status: %s",
-                        eventContext.get(AuthenticatorAdapterConstants.FLOW_ID),
-                        Optional.ofNullable(executionStatus).isPresent() ? executionStatus.getStatus() : "NA"));
-            }
-            return executionStatus;
-        } catch (ActionExecutionException e) {
-            throw new AuthenticationFailedException("Error while executing authentication action", e);
+        ActionExecutionStatus executionStatus =
+                AuthenticatorAdapterDataHolder.getInstance().getActionExecutorService()
+                        .execute(ActionType.AUTHENTICATION, actionId, eventContext, tenantDomain);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(String.format(
+                    "Invoked authentication action for Authentication flow ID: %s. Status: %s",
+                    eventContext.get(AuthenticatorAdapterConstants.FLOW_ID),
+                    Optional.ofNullable(executionStatus).isPresent() ? executionStatus.getStatus() : "NA"));
         }
+        return executionStatus;
     }
 
     @Override
@@ -156,24 +156,12 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
 
         ActionExecutionStatus executionStatus = (ActionExecutionStatus)
                 context.getProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
-        if (executionStatus.getStatus() == ActionExecutionStatus.Status.FAILED ||
-                executionStatus.getStatus() == ActionExecutionStatus.Status.ERROR) {
-            /* TODO: Improve AuthenticationFailedException error messages and description with specific error content
-                from the authentication action execution. */
-            throw new AuthenticationFailedException("An error occurred while authenticating with user the " +
-                    " external authentication authentication service.");
-        } else if (executionStatus.getStatus() == ActionExecutionStatus.Status.SUCCESS) {
-            if (context.getProperty(AuthenticatorAdapterConstants.AUTHENTICATED_USER_DATA) == null) {
-                if (AuthenticatorPropertyConstants.AuthenticationType.VERIFICATION.equals(getAuthenticationType())) {
-                    throw new AuthenticationFailedException("Authenticated user data is not found in the response.");
-                }
-                context.setSubject(context.getLastAuthenticatedUser());
-            }
-            AuthenticatedUserData authenticatedUserData = (AuthenticatedUserData)
-                    context.getProperty(AuthenticatorAdapterConstants.AUTHENTICATED_USER_DATA);
-            AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(authenticatedUserData, context)
-                    .buildAuthenticateduser();
-            context.setSubject(authenticatedUser);
+        String errorCode = (String) context.getProperty(FrameworkConstants.AUTH_ERROR_CODE);
+        String errorMessage = (String) context.getProperty(FrameworkConstants.AUTH_ERROR_MSG);
+        if (executionStatus.getStatus() == ActionExecutionStatus.Status.FAILED) {
+            throw new InvalidCredentialsException(errorCode, errorMessage);
+        } else if (executionStatus.getStatus() == ActionExecutionStatus.Status.ERROR) {
+            throw new AuthenticationFailedException(errorCode, errorMessage);
         }
     }
 

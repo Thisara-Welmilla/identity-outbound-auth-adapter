@@ -22,8 +22,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.CarbonConstants;
+import org.wso2.carbon.identity.action.execution.exception.ActionExecutionResponseProcessorException;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
-import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.LOCAL;
+import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.EXTERNAL_ID_CLAIM;
 import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.USERNAME_CLAIM;
 
 /**
@@ -61,8 +62,14 @@ public class AuthenticatedUserBuilder {
         userType = resolveIdpType();
     }
 
-    public AuthenticatedUser buildAuthenticateduser()
-            throws AuthenticationFailedException {
+    /**
+     * This method is responsible for building the authenticated user object from the authenticated user data.
+     *
+     * @return AuthenticatedUser object.
+     * @throws ActionExecutionResponseProcessorException If any error occurred when building the authenticated
+     * user object.
+     */
+    public AuthenticatedUser buildAuthenticateduser() throws ActionExecutionResponseProcessorException {
 
         if ((AuthenticatorAdapterConstants.UserType.LOCAL.equals(userType))) {
             return buildLocalAuthenticatedUser();
@@ -70,17 +77,19 @@ public class AuthenticatedUserBuilder {
         return buildFederatedAuthenticatedUser();
     }
 
-    private AuthenticatedUser buildFederatedAuthenticatedUser() throws AuthenticationFailedException {
+    private AuthenticatedUser buildFederatedAuthenticatedUser() throws ActionExecutionResponseProcessorException {
 
-        authenticatedUser = AuthenticatedUser.createFederateAuthenticatedUserFromSubjectIdentifier(
-                resolveUserId());
+        String userId = resolveUserId();
+        authenticatedUser = AuthenticatedUser.createFederateAuthenticatedUserFromSubjectIdentifier(userId);
         authenticatedUser.setFederatedIdPName(context.getExternalIdP().getIdPName());
-        authenticatedUser.setUserAttributes(resolveUserClaims());
+        Map<ClaimMapping, String> attributeMap = resolveUserClaims();
+        attributeMap.put(buildClaimMapping(EXTERNAL_ID_CLAIM), userId);
+        authenticatedUser.setUserAttributes(attributeMap);
         resolveUsernameForFederatedUser();
         return authenticatedUser;
     }
 
-    private AuthenticatedUser buildLocalAuthenticatedUser() throws AuthenticationFailedException {
+    private AuthenticatedUser buildLocalAuthenticatedUser() throws ActionExecutionResponseProcessorException {
 
         /* As there must be an existing user in the system by the given data, first resolve the user, then build
          authenticated user from it.
@@ -102,33 +111,33 @@ public class AuthenticatedUserBuilder {
                 AuthenticatorAdapterConstants.UserType.LOCAL : AuthenticatorAdapterConstants.UserType.FEDERATED;
     }
 
-    private String resolveUserId() throws AuthenticationFailedException {
+    private String resolveUserId() throws ActionExecutionResponseProcessorException {
 
         if (StringUtils.isNotBlank(user.getUser().getId())) {
             return user.getUser().getId();
         }
-        throw new AuthenticationFailedException("User Id is not found in the authenticated user data.");
+        throw new ActionExecutionResponseProcessorException("User Id is not found in the authenticated user data.");
     }
 
     private AuthenticatedUserData.UserStore resolveUserStoreForLocalUser()
-            throws AuthenticationFailedException {
+            throws ActionExecutionResponseProcessorException {
 
         if (user.getUser().getUserStore() != null) {
             return user.getUser().getUserStore();
         }
-        throw new AuthenticationFailedException("User store domain is not found in the authenticated " +
+        throw new ActionExecutionResponseProcessorException("User store domain is not found in the authenticated " +
                 "user data for the local user.");
     }
 
     private User resolveLocalUserFromUserStore(String userId, AuthenticatedUserData.UserStore userStore)
-            throws AuthenticationFailedException {
+            throws ActionExecutionResponseProcessorException {
 
         AbstractUserStoreManager userStoreManager = resolveUserStoreManager(userStore.getName());
         try {
             return userStoreManager.getUser(userId, null);
         } catch (org.wso2.carbon.user.core.UserStoreException e) {
             String message = "Error occurred when trying to resolve local user by user Id:" + user.getUser().getId();
-            throw new AuthenticationFailedException(message, e);
+            throw new ActionExecutionResponseProcessorException(message, e);
         }
     }
 
@@ -137,38 +146,33 @@ public class AuthenticatedUserBuilder {
         Map<ClaimMapping, String> userAttributes = new HashMap<>();
         for (AuthenticatedUserData.Claim claim : user.getUser().getClaims()) {
             userAttributes.put(buildClaimMapping(claim.getUri()), claim.getValue());
+            if (USERNAME_CLAIM.equals(claim.getUri())) {
+                username = claim.getValue();
+            }
         }
         return userAttributes;
     }
 
-    private void resolveUsernameForFederatedUser() throws AuthenticationFailedException {
+    private void resolveUsernameForFederatedUser() throws ActionExecutionResponseProcessorException {
 
         if (username == null) {
-            throw new AuthenticationFailedException(
+            throw new ActionExecutionResponseProcessorException(
                     "Username is not found in the authenticated user data.");
         } else if (StringUtils.isBlank(username)) {
-            throw new AuthenticationFailedException("Username is empty in the authenticated user data.");
+            throw new ActionExecutionResponseProcessorException("Username is empty in the authenticated user data.");
         }
         authenticatedUser.setUserName(username);
     }
 
-    private void resolveUsernameForLocalUser(User resolvedUser) throws AuthenticationFailedException {
+    private void resolveUsernameForLocalUser(User resolvedUser) throws ActionExecutionResponseProcessorException {
 
         if (!resolvedUser.getUsername().equals(username)) {
-            throw new AuthenticationFailedException("Username in the authenticated user data does not " +
+            throw new ActionExecutionResponseProcessorException("Username in the authenticated user data does not " +
                     "match with the resolved user's username.");
         }
         authenticatedUser.setUserName(username);
     }
 
-    private AbstractUserStoreManager resolveUserStoreManager(String userStoreDomain)
-            throws AuthenticationFailedException {
-
-        if (AuthenticatorAdapterConstants.UserType.LOCAL.equals(userType) && user.getUser().getUserStore() == null) {
-            throw new AuthenticationFailedException("User store domain is not found in the authenticated " +
-                    "user data for the local user.");
-        }
-      
     private ClaimMapping buildClaimMapping(String claimUri) {
         ClaimMapping claimMapping = new ClaimMapping();
         Claim claim = new Claim();
@@ -178,8 +182,13 @@ public class AuthenticatedUserBuilder {
         return claimMapping;
     }
 
-    private AbstractUserStoreManager resolveUserStoreManager(AuthenticationContext context, String userStoreDomain)
+    private AbstractUserStoreManager resolveUserStoreManager(String userStoreDomain)
             throws ActionExecutionResponseProcessorException {
+
+        if (AuthenticatorAdapterConstants.UserType.LOCAL.equals(userType) && user.getUser().getUserStore() == null) {
+            throw new ActionExecutionResponseProcessorException("User store domain is not found in the authenticated " +
+                    "user data for the local user.");
+        }
 
         AbstractUserStoreManager userStoreManager;
 
@@ -194,13 +203,13 @@ public class AuthenticatedUserBuilder {
                 userStoreManager = (AbstractUserStoreManager) userRealm.getUserStoreManager();
             }
         } catch (UserStoreException e) {
-            throw new AuthenticationFailedException("An error occurs when trying to retrieve the " +
+            throw new ActionExecutionResponseProcessorException("An error occurs when trying to retrieve the " +
                     "userStore manager for the given userStore domain name:" +  userStoreDomain, e);
         }
 
         if (StringUtils.isNotBlank(userStoreDomain) && userStoreManager == null) {
             String errorMessage = "No userStore is found for the given userStore domain name: " + userStoreDomain;
-            throw new AuthenticationFailedException(errorMessage);
+            throw new ActionExecutionResponseProcessorException(errorMessage);
         }
 
         return userStoreManager;
