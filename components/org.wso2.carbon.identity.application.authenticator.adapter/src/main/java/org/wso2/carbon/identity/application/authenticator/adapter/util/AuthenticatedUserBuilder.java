@@ -27,6 +27,7 @@ import org.wso2.carbon.identity.application.authentication.framework.exception.A
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
+import org.wso2.carbon.identity.application.common.model.Claim;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.user.api.UserStoreException;
@@ -38,6 +39,7 @@ import org.wso2.carbon.user.core.service.RealmService;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.LOCAL;
 import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.USERNAME_CLAIM;
 
 /**
@@ -96,7 +98,7 @@ public class AuthenticatedUserBuilder {
 
     private AuthenticatorAdapterConstants.UserType resolveIdpType() {
 
-        return context.getCurrentAuthenticator() == null ?
+        return LOCAL.equals(context.getExternalIdP().getIdPName()) ?
                 AuthenticatorAdapterConstants.UserType.LOCAL : AuthenticatorAdapterConstants.UserType.FEDERATED;
     }
 
@@ -133,13 +135,8 @@ public class AuthenticatedUserBuilder {
     private Map<ClaimMapping, String> resolveUserClaims() {
 
         Map<ClaimMapping, String> userAttributes = new HashMap<>();
-
-       for (AuthenticatedUserData.Claim claim : user.getUser().getClaims()) {
-            userAttributes.put(ClaimMapping.build(
-                    claim.getUri(), claim.getUri(), null, false), claim.getValue());
-            if (USERNAME_CLAIM.equals(claim.getUri())) {
-                username = claim.getValue();
-            }
+        for (AuthenticatedUserData.Claim claim : user.getUser().getClaims()) {
+            userAttributes.put(buildClaimMapping(claim.getUri()), claim.getValue());
         }
         return userAttributes;
     }
@@ -171,6 +168,18 @@ public class AuthenticatedUserBuilder {
             throw new AuthenticationFailedException("User store domain is not found in the authenticated " +
                     "user data for the local user.");
         }
+      
+    private ClaimMapping buildClaimMapping(String claimUri) {
+        ClaimMapping claimMapping = new ClaimMapping();
+        Claim claim = new Claim();
+        claim.setClaimUri(claimUri);
+        claimMapping.setRemoteClaim(claim);
+        claimMapping.setLocalClaim(claim);
+        return claimMapping;
+    }
+
+    private AbstractUserStoreManager resolveUserStoreManager(AuthenticationContext context, String userStoreDomain)
+            throws ActionExecutionResponseProcessorException {
 
         AbstractUserStoreManager userStoreManager;
 

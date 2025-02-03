@@ -180,12 +180,7 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     @Override
     public String getContextIdentifier(HttpServletRequest request) {
 
-        String state = request.getParameter("state");
-        if (state != null) {
-            return state.split(",")[0];
-        } else {
-            return null;
-        }
+        return request.getParameter("flowId");
     }
 
     @Override
