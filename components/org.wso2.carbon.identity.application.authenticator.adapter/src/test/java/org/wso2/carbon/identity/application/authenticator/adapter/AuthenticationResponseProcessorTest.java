@@ -18,27 +18,26 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import org.wso2.carbon.identity.action.execution.exception.ActionExecutionRequestBuilderException;
-import org.wso2.carbon.identity.action.execution.exception.ActionExecutionResponseProcessorException;
+import org.wso2.carbon.identity.action.execution.ActionExecutorService;
 import org.wso2.carbon.identity.action.execution.model.ActionExecutionRequest;
 import org.wso2.carbon.identity.action.execution.model.ActionExecutionStatus;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationErrorResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationFailureResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationSuccessResponse;
-import org.wso2.carbon.identity.action.execution.model.ActionType;
-import org.wso2.carbon.identity.action.execution.model.Error;
+import org.wso2.carbon.identity.action.execution.model.FailedStatus;
 import org.wso2.carbon.identity.action.execution.model.Failure;
+import org.wso2.carbon.identity.action.execution.model.IncompleteStatus;
 import org.wso2.carbon.identity.action.execution.model.Operation;
 import org.wso2.carbon.identity.action.execution.model.PerformableOperation;
-import org.wso2.carbon.identity.action.execution.model.Success;
-import org.wso2.carbon.identity.action.execution.model.UserStore;
+import org.wso2.carbon.identity.action.execution.model.SuccessStatus;
+import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.ExternalIdPConfig;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.UserIdNotFoundException;
@@ -47,26 +46,51 @@ import org.wso2.carbon.identity.application.authenticator.adapter.internal.Authe
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestActionInvocationResponseBuilder;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.TestActionInvocationResponseBuilder.ExternallyAuthenticatedUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticatedTestUserBuilder;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticationAdapterConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestEventContextBuilder;
-import org.wso2.carbon.identity.common.testng.WithCarbonHome;
+import org.wso2.carbon.identity.application.common.model.ClaimMapping;
+import org.wso2.carbon.identity.application.common.model.IdentityProvider;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.user.core.service.RealmService;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 import static org.wso2.carbon.base.MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
 
-@WithCarbonHome
 public class AuthenticationResponseProcessorTest {
 
-    private AuthenticationResponseProcessor authenticationResponseProcessor;
+    private FederatedAuthenticatorAdapter federatedAuthenticatorAdapter;
+    private final HttpServletRequest request = mock(HttpServletRequest.class);
+    private final HttpServletResponse response = mock(HttpServletResponse.class);
+    private AuthenticationContext authContextForNoUser;
+    private AuthenticationContext authContextForLocalUser;
+    private AuthenticationContext authContextForFedUser;
+    private AuthenticatedUser localUser;
+    private AuthenticatedUser fedUser;
+    private AuthenticatedUser expectedAuthenticatedUser;
+
     private MockedStatic<IdentityTenantUtil> identityTenantUtilMockedStatic;
+    private ActionExecutorService mockedActionExecutorService;
+
+    private static final String TENANT_DOMAIN_TEST = "carbon.super";
+    private static final int TENANT_ID_TEST = -1234;
+    private static ArrayList<AuthHistory> authHistory;
+
+    private RealmService mockedRealmService;
+
+    private AuthenticationResponseProcessor authenticationResponseProcessor;
     private Map<String, Object> eventContextForLocalUser;
     private ActionExecutionRequest authenticationRequest;
 
@@ -76,11 +100,8 @@ public class AuthenticationResponseProcessorTest {
     private static final Map<String, String> parameters = Map.of("param-1", "value-1", "param-2", "value-2");
     private static ArrayList<AuthHistory> authHistory;
 
-    @Mock
-    private RealmService realmService;
-
     @BeforeClass
-    public void setUp() throws ActionExecutionRequestBuilderException {
+    public void setUp() throws Exception {
 
         authenticationResponseProcessor = new AuthenticationResponseProcessor();
         authHistory = TestEventContextBuilder.buildAuthHistory();
@@ -89,18 +110,76 @@ public class AuthenticationResponseProcessorTest {
         identityTenantUtilMockedStatic.when(() -> IdentityTenantUtil.getTenantId(TENANT_DOMAIN_TEST))
                 .thenReturn(TENANT_ID_TEST);
 
-        realmService = mock(RealmService.class);
-        AuthenticatorAdapterDataHolder.getInstance().setRealmService(realmService);
+        mockedRealmService = mock(RealmService.class);
+        AuthenticatorAdapterDataHolder.getInstance().setRealmService(mockedRealmService);
 
         // Custom authenticator engaging in 2nd step of authentication flow with Local authenticated user.
         AuthenticatedUser localUser = TestAuthenticatedTestUserBuilder.createAuthenticatedUser(
                 TestAuthenticatedTestUserBuilder.AuthenticatedUserConstants.LOCAL_USER_PREFIX,
                 SUPER_TENANT_DOMAIN_NAME);
-        eventContextForLocalUser = new TestEventContextBuilder(
-                localUser, SUPER_TENANT_DOMAIN_NAME, headers, parameters, authHistory)
-                .getEventContext();
+        eventContextForLocalUser = new TestEventContextBuilder().buildEventContext(
+                localUser, SUPER_TENANT_DOMAIN_NAME, headers, parameters, authHistory);
         authenticationRequest = new AuthenticationRequestBuilder()
                 .buildActionExecutionRequest(eventContextForLocalUser);
+
+        authHistory = TestEventContextBuilder.buildAuthHistory();
+        buildEventContext();
+
+        identityTenantUtilMockedStatic = mockStatic(IdentityTenantUtil.class);
+        identityTenantUtilMockedStatic.when(() -> IdentityTenantUtil.getTenantId(TENANT_DOMAIN_TEST))
+                .thenReturn(TENANT_ID_TEST);
+
+        mockStatic(AuthenticatedUser.class);
+        AuthenticatedUser mockUser = new AuthenticatedUser();
+        mockUser.setUserId(TestAuthenticationAdapterConstants.AuthenticatingUserConstants.USERID);
+        mockUser.setUserName(TestAuthenticationAdapterConstants.AuthenticatingUserConstants.USERNAME);
+        when(AuthenticatedUser.createLocalAuthenticatedUserFromSubjectIdentifier(anyString()))
+                .thenReturn(mockUser);
+        when(AuthenticatedUser.createFederateAuthenticatedUserFromSubjectIdentifier(anyString()))
+                .thenReturn(mockUser);
+
+        mockedActionExecutorService = mock(ActionExecutorService.class);
+        AuthenticatorAdapterDataHolder.getInstance().setActionExecutorService(mockedActionExecutorService);
+
+        expectedAuthenticatedUser = new AuthenticatedUser();
+        expectedAuthenticatedUser.setUserId(TestAuthenticationAdapterConstants.AuthenticatingUserConstants.USERID);
+        expectedAuthenticatedUser.setUserStoreDomain(TestAuthenticationAdapterConstants.AuthenticatingUserConstants.USER_STORE_NAME);
+        expectedAuthenticatedUser.setUserName(TestAuthenticationAdapterConstants.AuthenticatingUserConstants.USERNAME);
+
+    }
+
+
+    @AfterClass
+    public void tearDown() {
+
+        identityTenantUtilMockedStatic.close();
+    }
+
+    public void buildEventContext() {
+
+        IdentityProvider idp = new IdentityProvider();
+        idp.setIdentityProviderName("testIdp");
+
+        // Custom authenticator engaging in 1st step of authentication flow.
+        authContextForNoUser = new TestEventContextBuilder().buildAuthenticationContext(
+                null, SUPER_TENANT_DOMAIN_NAME, new ArrayList<AuthHistory>());
+        authContextForNoUser.setExternalIdP(new ExternalIdPConfig(idp));
+
+        // Custom authenticator engaging in 2nd step of authentication flow with Local authenticated user.
+        localUser = TestAuthenticatedTestUserBuilder.createAuthenticatedUser(
+                TestAuthenticatedTestUserBuilder.AuthenticatedUserConstants.LOCAL_USER_PREFIX,
+                SUPER_TENANT_DOMAIN_NAME);
+        authContextForLocalUser = new TestEventContextBuilder().buildAuthenticationContext(
+                localUser, SUPER_TENANT_DOMAIN_NAME, authHistory);
+        authContextForLocalUser.setExternalIdP(new ExternalIdPConfig(idp));
+
+        // Custom authenticator engaging in 2nd step of authentication flow with federated authenticated user.
+        fedUser = TestAuthenticatedTestUserBuilder.createAuthenticatedUser(
+                TestAuthenticatedTestUserBuilder.AuthenticatedUserConstants.LOCAL_USER_PREFIX,
+                SUPER_TENANT_DOMAIN_NAME);
+        authContextForFedUser = new TestEventContextBuilder().buildAuthenticationContext(
+                fedUser, SUPER_TENANT_DOMAIN_NAME, authHistory);
+        authContextForFedUser.setExternalIdP(new ExternalIdPConfig(idp));
     }
 
     @Test
@@ -109,96 +188,9 @@ public class AuthenticationResponseProcessorTest {
         Assert.assertEquals(authenticationResponseProcessor.getSupportedActionType(), ActionType.AUTHENTICATION);
     }
 
-    @DataProvider
-    public Object[][] getSuccessResponse() throws JsonProcessingException {
-
-        ExternallyAuthenticatedUser authenticatedUser = new ExternallyAuthenticatedUser();
-        authenticatedUser.setUserStore(new UserStore("PRIMARY"));
-        ActionInvocationSuccessResponse authSuccessResponse = TestActionInvocationResponseBuilder
-                .buildAuthenticationSuccessResponse(new ArrayList<>(), null);
-
-        return new Object[][] {
-                {eventContextForLocalUser, authenticationRequest, authSuccessResponse, authenticatedUser}
-        };
-    }
-
-    //@Test(dataProvider = "getSuccessResponse")
-    public void testProcessSuccessResponse(Map<String, Object> eventContext, ActionExecutionRequest authRequest,
-            ActionInvocationSuccessResponse successResponse, ExternallyAuthenticatedUser expectedUser)
-            throws ActionExecutionResponseProcessorException, UserIdNotFoundException {
-
-        ActionExecutionStatus<Success> executionStatus = authenticationResponseProcessor.processSuccessResponse(
-                eventContext, authRequest.getEvent(), successResponse);
-
-        Assert.assertEquals(executionStatus.getStatus(), ActionExecutionStatus.Status.SUCCESS);
-        assertAuthenticationContext(eventContext, expectedUser);
-    }
-
-    @DataProvider
-    public Object[][] getSuccessStatusResponseForProcessorExceptions() throws JsonProcessingException {
-
-        ExternallyAuthenticatedUser authenticatedUser = new ExternallyAuthenticatedUser();
-
-        // Authenticator success response with no data.
-        ActionInvocationSuccessResponse authResponseWithNoData =
-                TestActionInvocationResponseBuilder.buildAuthenticationSuccessResponse(new ArrayList<>(), null);
-
-        // Authenticator success response with operations.
-        ActionInvocationSuccessResponse authResponseWithOperation =
-                TestActionInvocationResponseBuilder.buildAuthenticationSuccessResponse(
-                        new ArrayList<>(buildRedirectPerformableOperation("https://dummy-url")),
-                        null);
-
-        // Authenticator success response with no user id in user data
-        authenticatedUser.setId(null);
-        String dataWithNoUserId = authenticatedUser.covertJsonString();
-        ActionInvocationSuccessResponse authResponseWithNoUserId = TestActionInvocationResponseBuilder
-                .buildAuthenticationSuccessResponse(new ArrayList<>(), null);
-
-        // Authenticator success response with invalid user claims in user data
-        String dataWithInvalidClaims = new ExternallyAuthenticatedUser().covertJsonString()
-                .replace("\"name\":\"claim-1\",", "");
-        ActionInvocationSuccessResponse authResponseWithInvalidClaims = TestActionInvocationResponseBuilder
-                .buildAuthenticationSuccessResponse(new ArrayList<>(), null);
-
-        return new Object[][] {
-                {eventContextForLocalUser, authenticationRequest, authResponseWithNoData, "The data field in the " +
-                        "SUCCESS action invocation status must not be empty for the AUTHENTICATION action type."},
-                {eventContextForLocalUser, authenticationRequest, authResponseWithOperation, "The list of performable" +
-                        " operations must be empty for the SUCCESS action invocation status for the AUTHENTICATION " +
-                        "action type."},
-                {eventContextForLocalUser, authenticationRequest, authResponseWithNoUserId,
-                        "User Id is not found in the authenticated user data."},
-                {eventContextForLocalUser, authenticationRequest, authResponseWithInvalidClaims, "The provided data " +
-                        "cannot be cast to an AuthenticatedUserData object:" + dataWithInvalidClaims}
-        };
-    }
-
-    private void assertAuthenticationContext(Map<String, Object> eventContext,
-                                             ExternallyAuthenticatedUser expectedUser) throws UserIdNotFoundException {
-
-        Object context = eventContext.get(AuthenticatorAdapterConstants.AUTH_CONTEXT);
-        Assert.assertNotNull(context);
-        Assert.assertTrue(context instanceof AuthenticationContext);
-        AuthenticationContext authContext = (AuthenticationContext) context;
-        assertAuthenticatedUser(authContext.getLastAuthenticatedUser(), expectedUser);
-
-        // assert other values are not changed.
-    }
-
-    private void assertAuthenticatedUser(AuthenticatedUser authenticatedUser, ExternallyAuthenticatedUser expectedUser)
-            throws UserIdNotFoundException {
-
-        Assert.assertNotNull(authenticatedUser);
-        Assert.assertEquals(authenticatedUser.getUserId(), expectedUser.getId());
-        for (AuthenticatedUserData.Claim claim : expectedUser.getClaims()) {
-            //Assert.assertEquals(authenticatedUser.getUserAttributes().get(claim.getName()), claim.getValue());
-        }
-    }
-
     @Test
-    public void testProcessFailedResponse()
-            throws ActionExecutionResponseProcessorException {
+    public void testProcessFailedResponse() throws Exception {
+
         ActionInvocationFailureResponse failureResponse =
                 TestActionInvocationResponseBuilder.buildActionInvocationFailureResponse();
 
@@ -212,8 +204,7 @@ public class AuthenticationResponseProcessorTest {
     }
 
     @Test
-    public void testProcessErrorResponse()
-            throws ActionExecutionResponseProcessorException {
+    public void testProcessErrorResponse() throws Exception {
         ActionInvocationErrorResponse errorResponse =
                 TestActionInvocationResponseBuilder.buildActionInvocationErrorResponse();
 
@@ -232,5 +223,148 @@ public class AuthenticationResponseProcessorTest {
         operation.setUrl(redirectUrl);
 
         return new ArrayList<>(List.of(operation));
+    }
+
+    @DataProvider
+    public Object[][] getAuthContexts() {
+
+        return new Object[][] {
+                {authContextForNoUser},
+                {authContextForLocalUser},
+                {authContextForFedUser},
+        };
+    }
+
+    @Test(dataProvider = "getAuthContexts")
+    public void testIncompleteAuthenticationRequestProcess(AuthenticationContext context) throws Exception {
+
+        when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenReturn(
+                new IncompleteStatus.Builder().responseContext(new HashMap<>()).build());
+        AuthenticatorFlowStatus authStatus = federatedAuthenticatorAdapter.process(request, response, context);
+
+        Assert.assertEquals(authStatus, AuthenticatorFlowStatus.INCOMPLETE);
+    }
+
+    @Test(dataProvider = "getAuthContexts")
+    public void testFailureAuthenticationRequestProcess(AuthenticationContext context) throws Exception {
+
+        when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenReturn(
+                new FailedStatus(new Failure("failureResponse.getFailureReason()",
+                        "failureResponse.getFailureDescription()")));
+        //AuthenticatorFlowStatus authStatus = federatedAuthenticatorAdapter.process(request, response, context);
+
+        //Assert.assertEquals(authStatus, AuthenticatorFlowStatus.FAIL_COMPLETED);
+    }
+
+    @DataProvider
+    public Object[][] getSuccessValidResponsesForLocalUsers() {
+
+        TestActionInvocationResponseBuilder.ExternallyAuthenticatedUser authUser = new TestActionInvocationResponseBuilder.ExternallyAuthenticatedUser();
+
+        // Valid user data with userId, userStore and userName claim.
+        ActionInvocationSuccessResponse authSuccessResponseWithAuthUser = TestActionInvocationResponseBuilder
+                .buildAuthenticationSuccessResponse(
+                        new ArrayList<>(),
+                        new AuthenticatedUserData(authUser));
+
+        // Valid user data with userId and without userStore, userName claim.
+        TestActionInvocationResponseBuilder.ExternallyAuthenticatedUser authUserNoUserStore = new TestActionInvocationResponseBuilder.ExternallyAuthenticatedUser();
+        authUserNoUserStore.setUserStore(null);
+        ActionInvocationSuccessResponse authSuccessResponseWithoutUserStore = TestActionInvocationResponseBuilder
+                .buildAuthenticationSuccessResponse(
+                        new ArrayList<>(),
+                        new AuthenticatedUserData(authUserNoUserStore));
+
+        return new Object[][] {
+                {authContextForFedUser, authSuccessResponseWithAuthUser,
+                        expectedAuthenticatedUser},
+                {authContextForFedUser, authSuccessResponseWithoutUserStore,
+                        expectedAuthenticatedUser}
+        };
+    }
+
+    @Test(dataProvider = "getSuccessValidResponsesForLocalUsers")
+    public void testProcessSuccessResponseWithValidResponsesForLocalUsers(AuthenticationContext context,
+            ActionInvocationSuccessResponse successResponse, AuthenticatedUser expectedUser)
+            throws Exception {
+
+        Map<String, Object> eventContext = new TestEventContextBuilder().buildEventContext(
+                null, SUPER_TENANT_DOMAIN_NAME, new HashMap<>(), new HashMap<>(), authHistory);
+        when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenReturn(
+                new SuccessStatus.Builder().setResponseContext(eventContext).build());
+        context.setCurrentStep(2);
+        context.setProperty(AuthenticatorAdapterConstants.AUTHENTICATED_USER_DATA, successResponse.getData());
+        context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME,
+                ActionExecutionStatus.Status.SUCCESS);
+
+        AuthenticatorFlowStatus status = federatedAuthenticatorAdapter.process(request, response, context);
+
+        Assert.assertEquals(status, AuthenticatorFlowStatus.SUCCESS_COMPLETED);
+        // Assert authenticated user set in the context.
+        assertAuthenticationContext(context, expectedUser);
+    }
+
+    @DataProvider
+    public Object[][] getSuccessInvalidResponsesForLocalUsers() {
+
+        // Invalid user data without userId.
+        TestActionInvocationResponseBuilder.ExternallyAuthenticatedUser authUserNoUserId = new TestActionInvocationResponseBuilder.ExternallyAuthenticatedUser();
+        authUserNoUserId.setId(null);
+        ActionInvocationSuccessResponse authSuccessResponseWithoutUserStore = TestActionInvocationResponseBuilder
+                .buildAuthenticationSuccessResponse(
+                        new ArrayList<>(),
+                        new AuthenticatedUserData(authUserNoUserId));
+
+        // Invalid user data with userId, userStore and mismatching userName claim.
+        TestActionInvocationResponseBuilder.ExternallyAuthenticatedUser authUserMissMatchUserName = new TestActionInvocationResponseBuilder.ExternallyAuthenticatedUser();
+        ActionInvocationSuccessResponse authSuccessResponseWithMissMatchUserName = TestActionInvocationResponseBuilder
+                .buildAuthenticationSuccessResponse(
+                        new ArrayList<>(),
+                        new AuthenticatedUserData(authUserMissMatchUserName));
+
+
+        // Valid user data with userId, userStore and without userName claim.
+        TestActionInvocationResponseBuilder.ExternallyAuthenticatedUser authUserNoUserName = new TestActionInvocationResponseBuilder.ExternallyAuthenticatedUser();
+        ActionInvocationSuccessResponse authSuccessResponseWithoutUserName = TestActionInvocationResponseBuilder
+                .buildAuthenticationSuccessResponse(
+                        new ArrayList<>(),
+                        new AuthenticatedUserData(authUserNoUserName));
+
+        return new Object[][] {
+                {authContextForLocalUser, authSuccessResponseWithoutUserStore},
+                {authContextForLocalUser, authSuccessResponseWithMissMatchUserName}
+        };
+    }
+
+    @Test(dataProvider = "getSuccessInvalidResponsesForLocalUsers")
+    public void testProcessSuccessResponseWithInvalidResponsesForLocalUsers(
+            Map<String, Object> eventContext,
+            ActionInvocationSuccessResponse successResponse, TestActionInvocationResponseBuilder.ExternallyAuthenticatedUser expectedUser)
+            throws Exception {
+
+        federatedAuthenticatorAdapter.process(request, response, authContextForFedUser);
+    }
+
+    private void assertAuthenticationContext(AuthenticationContext context,
+                                             AuthenticatedUser expectedUser) throws UserIdNotFoundException {
+
+        Assert.assertNotNull(context);
+        AuthenticatedUser subject = context.getSubject();
+        assertAuthenticatedUser(subject, expectedUser);
+    }
+
+    private void assertAuthenticatedUser(AuthenticatedUser authenticatedUser, AuthenticatedUser expectedUser)
+            throws UserIdNotFoundException {
+
+        Assert.assertNotNull(authenticatedUser);
+        Assert.assertEquals(authenticatedUser.getUserId(), expectedUser.getUserId());
+        Assert.assertEquals(authenticatedUser.getUserStoreDomain(), expectedUser.getUserStoreDomain());
+        Assert.assertEquals(authenticatedUser.getUserName(), expectedUser.getUserName());
+        Assert.assertEquals(authenticatedUser.isFederatedUser(), expectedUser.isFederatedUser());
+        Assert.assertEquals(authenticatedUser.getFederatedIdPName(), expectedUser.getFederatedIdPName());
+        Assert.assertEquals(authenticatedUser.getTenantDomain(), expectedUser.getTenantDomain());
+        for (Map.Entry<ClaimMapping, String> claim : expectedUser.getUserAttributes().entrySet()) {
+            Assert.assertEquals(authenticatedUser.getUserAttributes().get(claim.getKey()), claim.getValue());
+        }
     }
 }

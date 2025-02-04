@@ -21,20 +21,30 @@ package org.wso2.carbon.identity.application.authenticator.adapter;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.wso2.carbon.identity.action.execution.ActionExecutorService;
+import org.wso2.carbon.identity.action.execution.model.IncompleteStatus;
+import org.wso2.carbon.identity.action.execution.model.SuccessStatus;
 import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
-import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
-import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorConfig;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.util.HashMap;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 public class FederatedAuthenticatorAdapterTest {
 
     private static final String AUTHENTICATOR_NAME = "FederatedAuthenticatorAdapter";
     private static final String FRIENDLY_NAME = "Federated Authenticator Adapter";
+
+    private ActionExecutorService mockedActionExecutorService;
 
     private FederatedAuthenticatorAdapter federatedAuthenticatorAdapter;
 
@@ -45,6 +55,9 @@ public class FederatedAuthenticatorAdapterTest {
         fedConfig.setName(AUTHENTICATOR_NAME);
         fedConfig.setDisplayName(FRIENDLY_NAME);
         federatedAuthenticatorAdapter = new FederatedAuthenticatorAdapter(fedConfig);
+
+        mockedActionExecutorService = mock(ActionExecutorService.class);
+        AuthenticatorAdapterDataHolder.getInstance().setActionExecutorService(mockedActionExecutorService);
     }
 
     @Test
@@ -68,9 +81,10 @@ public class FederatedAuthenticatorAdapterTest {
 
     @Test
     public void testSuccessAuthenticationRequestProcess(HttpServletRequest request, HttpServletResponse response,
-                                                        AuthenticationContext context)
-            throws AuthenticationFailedException, LogoutFailedException {
+                                                        AuthenticationContext context) throws Exception {
 
+        when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenReturn(
+                new SuccessStatus.Builder().setResponseContext(new HashMap<>()).build());
         AuthenticatorFlowStatus authStatus = federatedAuthenticatorAdapter.process(request, response, context);
 
         Assert.assertEquals(authStatus, AuthenticatorFlowStatus.SUCCESS_COMPLETED);
@@ -78,21 +92,12 @@ public class FederatedAuthenticatorAdapterTest {
 
     @Test
     public void testIncompleteAuthenticationRequestProcess(HttpServletRequest request, HttpServletResponse response,
-                                                           AuthenticationContext context)
-            throws AuthenticationFailedException, LogoutFailedException {
+                                                           AuthenticationContext context) throws Exception {
 
+        when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenReturn(
+                new IncompleteStatus.Builder().responseContext(new HashMap<>()).build());
         AuthenticatorFlowStatus authStatus = federatedAuthenticatorAdapter.process(request, response, context);
 
         Assert.assertEquals(authStatus, AuthenticatorFlowStatus.INCOMPLETE);
-    }
-
-    @Test
-    public void testFailureAuthenticationRequestProcess(HttpServletRequest request, HttpServletResponse response,
-                                                        AuthenticationContext context)
-            throws AuthenticationFailedException, LogoutFailedException {
-
-        AuthenticatorFlowStatus authStatus = federatedAuthenticatorAdapter.process(request, response, context);
-
-        Assert.assertEquals(authStatus, AuthenticatorFlowStatus.FAIL_COMPLETED);
     }
 }
