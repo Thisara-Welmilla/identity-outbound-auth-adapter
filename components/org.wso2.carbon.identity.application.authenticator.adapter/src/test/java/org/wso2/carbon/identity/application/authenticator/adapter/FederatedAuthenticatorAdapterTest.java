@@ -26,7 +26,7 @@ import org.wso2.carbon.identity.application.authentication.framework.context.Aut
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
-import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorConfig;
+import org.wso2.carbon.identity.application.common.model.UserDefinedFederatedAuthenticatorConfig;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,7 +41,7 @@ public class FederatedAuthenticatorAdapterTest {
     @BeforeClass
     public void setUp() {
 
-        FederatedAuthenticatorConfig fedConfig = new FederatedAuthenticatorConfig();
+        UserDefinedFederatedAuthenticatorConfig fedConfig = new UserDefinedFederatedAuthenticatorConfig();
         fedConfig.setName(AUTHENTICATOR_NAME);
         fedConfig.setDisplayName(FRIENDLY_NAME);
         federatedAuthenticatorAdapter = new FederatedAuthenticatorAdapter(fedConfig);

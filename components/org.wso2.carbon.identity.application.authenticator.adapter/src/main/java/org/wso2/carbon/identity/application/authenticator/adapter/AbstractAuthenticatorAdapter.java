@@ -23,6 +23,8 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionException;
 import org.wso2.carbon.identity.action.execution.model.ActionExecutionStatus;
 import org.wso2.carbon.identity.action.execution.model.ActionType;
+import org.wso2.carbon.identity.action.execution.model.Error;
+import org.wso2.carbon.identity.action.execution.model.ErrorStatus;
 import org.wso2.carbon.identity.application.authentication.framework.AbstractApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
@@ -77,7 +79,10 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
             eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, context);
             eventContext.put(AuthenticatorAdapterConstants.AUTH_TYPE, getAuthenticationType());
 
+            /* Execute the corresponding action from the authentication config and add the ActionExecutionStatus result
+             to the context which will be used in processAuthenticationResponse method. */
             ActionExecutionStatus executionStatus = executeAction(context, eventContext, context.getTenantDomain());
+            context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME, executionStatus);
 
             if (executionStatus.getStatus() == ActionExecutionStatus.Status.INCOMPLETE) {
                 context.setCurrentAuthenticator(getName());
@@ -85,11 +90,11 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
                 return AuthenticatorFlowStatus.INCOMPLETE;
             }
 
+            /* Invoke the process method in the AbstractApplicationAuthenticator class to continue processing the
+              AuthenticationContext. */
             return super.process(request, response, context);
         } catch (ActionExecutionException e) {
-            context.setProperty(FrameworkConstants.AUTH_ERROR_CODE, e.getMessage());
-            context.setProperty(FrameworkConstants.AUTH_ERROR_MSG, "An error occurred while authenticating user" +
-                    " with the external authentication authentication service.");
+            handleActionExecutionException(context);
             return super.process(request, response, context);
         } finally {
             context.removeProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
@@ -154,6 +159,12 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     protected void processAuthenticationResponse(HttpServletRequest request, HttpServletResponse response,
                                                  AuthenticationContext context) throws AuthenticationFailedException {
 
+        /* This method is invoked from the AbstractApplicationAuthenticator class to handle the authentication response.
+         When the ActionExecutionStatus is SUCCESS, the authenticated user is built based on the action response in the
+         processSuccessResponse method within the AuthenticationResponseProcessor class. In this method, if the
+         ActionExecutionStatus is FAILED, an InvalidCredentialsException is thrown, and if the ActionExecutionStatus is
+         ERROR, an AuthenticationFailedException is thrown. Based on the exception, the process method of the superclass
+         updates the authentication context. */
         ActionExecutionStatus executionStatus = (ActionExecutionStatus)
                 context.getProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
         String errorCode = (String) context.getProperty(FrameworkConstants.AUTH_ERROR_CODE);
@@ -189,5 +200,19 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     public AuthenticatorPropertyConstants.DefinedByType getDefinedByType() {
 
         return AuthenticatorPropertyConstants.DefinedByType.USER;
+    }
+
+    private void handleActionExecutionException(AuthenticationContext context) {
+
+        /* Set a generic error code and message to be sent to the client. An ErrorStatus is generated as the result of
+         the action execution, which will be evaluated and trigger an AuthenticationFailedException in the
+         processAuthenticationResponse method. */
+        String errorCode = "auth_extension_error";
+        String errorMessage = "An error occurred while authenticating user with the external authentication extension.";
+        context.setProperty(FrameworkConstants.AUTH_ERROR_CODE, errorCode);
+        context.setProperty(FrameworkConstants.AUTH_ERROR_MSG, errorMessage);
+
+        context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME,
+                new ErrorStatus(new Error(errorCode, errorMessage)));
     }
 }

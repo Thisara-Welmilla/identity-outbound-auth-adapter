@@ -19,7 +19,6 @@
 package org.wso2.carbon.identity.application.authenticator.adapter;
 
 import org.wso2.carbon.identity.application.authentication.framework.LocalApplicationAuthenticator;
-import org.wso2.carbon.identity.application.common.model.LocalAuthenticatorConfig;
 import org.wso2.carbon.identity.application.common.model.UserDefinedLocalAuthenticatorConfig;
 
 /**
@@ -30,12 +29,10 @@ public class LocalAuthenticatorAdapter extends AbstractAuthenticatorAdapter impl
 
     private static final long serialVersionUID = 1357924680135792468L;
 
-    public LocalAuthenticatorAdapter(LocalAuthenticatorConfig config) {
+    public LocalAuthenticatorAdapter(UserDefinedLocalAuthenticatorConfig config) {
 
         authenticatorName = config.getName();
         friendlyName = config.getDisplayName();
-        if (config instanceof UserDefinedLocalAuthenticatorConfig) {
-            authenticationType = ((UserDefinedLocalAuthenticatorConfig) config).getAuthenticationType();
-        }
+        authenticationType = config.getAuthenticationType();
     }
 }

@@ -26,7 +26,8 @@ import org.wso2.carbon.identity.application.authentication.framework.context.Aut
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
-import org.wso2.carbon.identity.application.common.model.LocalAuthenticatorConfig;
+import org.wso2.carbon.identity.application.common.model.UserDefinedLocalAuthenticatorConfig;
+import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,10 +42,11 @@ public class LocalAuthenticatorAdapterTest {
     @BeforeClass
     public void setUp() {
 
-        LocalAuthenticatorConfig fedConfig = new LocalAuthenticatorConfig();
-        fedConfig.setName(AUTHENTICATOR_NAME);
-        fedConfig.setDisplayName(FRIENDLY_NAME);
-        localAuthenticatorAdapter = new LocalAuthenticatorAdapter(fedConfig);
+        UserDefinedLocalAuthenticatorConfig localConfig = new UserDefinedLocalAuthenticatorConfig(
+                AuthenticatorPropertyConstants.AuthenticationType.IDENTIFICATION);
+        localConfig.setName(AUTHENTICATOR_NAME);
+        localConfig.setDisplayName(FRIENDLY_NAME);
+        localAuthenticatorAdapter = new LocalAuthenticatorAdapter(localConfig);
     }
 
     @Test
@@ -57,6 +59,13 @@ public class LocalAuthenticatorAdapterTest {
     public void testGetName() {
 
         Assert.assertEquals(localAuthenticatorAdapter.getName(), AUTHENTICATOR_NAME);
+    }
+
+    @Test
+    public void testGetAuthenticationType() {
+
+        Assert.assertEquals(localAuthenticatorAdapter.getAuthenticationType(),
+                AuthenticatorPropertyConstants.AuthenticationType.IDENTIFICATION);
     }
 
     @Test

@@ -79,8 +79,10 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
                 eventContext.get(AuthenticatorAdapterConstants.AUTH_TYPE);
         if (actionInvocationSuccessResponse.getData() == null) {
             if (AuthenticatorPropertyConstants.AuthenticationType.IDENTIFICATION.equals(authType)) {
-                throw new ActionExecutionResponseProcessorException("The authenticated user data is not found in the " +
-                        "action response from the authentication extension.");
+                // TODO: Add diagnostic log for this error scenario.
+                throw new ActionExecutionResponseProcessorException("The 'user' field is missing in the" +
+                        " authentication extension response. This field is required for IDENTIFICATION " +
+                        "authentication.");
             }
             context.setSubject(context.getLastAuthenticatedUser());
         }
