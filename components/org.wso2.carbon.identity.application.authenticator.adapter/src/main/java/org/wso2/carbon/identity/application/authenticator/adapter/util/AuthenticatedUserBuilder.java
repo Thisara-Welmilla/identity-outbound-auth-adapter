@@ -87,6 +87,7 @@ public class AuthenticatedUserBuilder {
         attributeMap.put(buildClaimMapping(EXTERNAL_ID_CLAIM), userId);
         authenticatedUser.setUserAttributes(attributeMap);
         resolveUsernameForFederatedUser();
+        authenticatedUser.setTenantDomain(context.getTenantDomain());
         return authenticatedUser;
     }
 
@@ -104,6 +105,7 @@ public class AuthenticatedUserBuilder {
                  + CarbonConstants.DOMAIN_SEPARATOR + localUserFromUserStore.getUsername());
         authenticatedUser.setUserAttributes(resolveUserNameAndClaimsFromResponse());
         validateUsernameForLocalUser(localUserFromUserStore);
+        authenticatedUser.setTenantDomain(context.getTenantDomain());
         return authenticatedUser;
     }
 
@@ -120,7 +122,7 @@ public class AuthenticatedUserBuilder {
         }
         // Todo: Add diagnostic log for the error scenario.
         throw new ActionExecutionResponseProcessorException("The 'userId' field is missing in the authentication " +
-                "extension response.");
+                "action response.");
     }
 
     private AuthenticatedUserData.UserStore resolveUserStoreForLocalUser()
@@ -131,7 +133,7 @@ public class AuthenticatedUserBuilder {
         }
         // Todo: Add diagnostic log for the error scenario.
         throw new ActionExecutionResponseProcessorException("The 'userStore' field is missing in the " +
-                "authentication extension response. This field is required for local user authentication.");
+                "authentication action response. This field is required for local user authentication.");
     }
 
     private User resolveLocalUserFromUserStore(String userId, AuthenticatedUserData.UserStore userStore)

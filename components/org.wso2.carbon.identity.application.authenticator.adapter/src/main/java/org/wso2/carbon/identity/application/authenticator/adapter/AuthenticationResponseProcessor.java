@@ -81,7 +81,7 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
             if (AuthenticatorPropertyConstants.AuthenticationType.IDENTIFICATION.equals(authType)) {
                 // TODO: Add diagnostic log for this error scenario.
                 throw new ActionExecutionResponseProcessorException("The 'user' field is missing in the" +
-                        " authentication extension response. This field is required for IDENTIFICATION " +
+                        " authentication action response. This field is required for IDENTIFICATION " +
                         "authentication.");
             }
             context.setSubject(context.getLastAuthenticatedUser());
@@ -163,11 +163,6 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
                                                              Event actionEvent,
                                                              ActionInvocationErrorResponse errorResponse) throws
             ActionExecutionResponseProcessorException {
-
-        AuthenticationContext context = (AuthenticationContext) eventContext.get(
-                AuthenticatorAdapterConstants.AUTH_CONTEXT);
-        context.setProperty(FrameworkConstants.AUTH_ERROR_CODE, errorResponse.getErrorMessage());
-        context.setProperty(FrameworkConstants.AUTH_ERROR_MSG, errorResponse.getErrorDescription());
 
         return new ErrorStatus(new Error(errorResponse.getErrorMessage(), errorResponse.getErrorDescription()));
     }

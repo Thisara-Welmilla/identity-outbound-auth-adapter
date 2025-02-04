@@ -57,6 +57,9 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     protected AuthenticatorPropertyConstants.AuthenticationType authenticationType = AuthenticatorPropertyConstants
             .AuthenticationType.IDENTIFICATION;
 
+    private static final String errorCodeForClient = "authentication_processing_error";
+    private static final String errorMessageForClient = "An error occurred while authenticating user with %s.";
+
     @Override
     public boolean canHandle(HttpServletRequest request) {
 
@@ -94,7 +97,10 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
               AuthenticationContext. */
             return super.process(request, response, context);
         } catch (ActionExecutionException e) {
-            handleActionExecutionException(context);
+            context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME,
+                    new ErrorStatus(
+                            new Error(errorCodeForClient,
+                            String.format(errorMessageForClient, getFriendlyName()))));
             return super.process(request, response, context);
         } finally {
             context.removeProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
@@ -172,6 +178,7 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
         if (executionStatus.getStatus() == ActionExecutionStatus.Status.FAILED) {
             throw new InvalidCredentialsException(errorCode, errorMessage);
         } else if (executionStatus.getStatus() == ActionExecutionStatus.Status.ERROR) {
+            setErrorContextForClient(context);
             throw new AuthenticationFailedException(errorCode, errorMessage);
         }
     }
@@ -202,17 +209,12 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
         return AuthenticatorPropertyConstants.DefinedByType.USER;
     }
 
-    private void handleActionExecutionException(AuthenticationContext context) {
+    private void setErrorContextForClient(AuthenticationContext context) {
 
-        /* Set a generic error code and message to be sent to the client. An ErrorStatus is generated as the result of
-         the action execution, which will be evaluated and trigger an AuthenticationFailedException in the
-         processAuthenticationResponse method. */
-        String errorCode = "auth_extension_error";
-        String errorMessage = "An error occurred while authenticating user with the external authentication extension.";
-        context.setProperty(FrameworkConstants.AUTH_ERROR_CODE, errorCode);
-        context.setProperty(FrameworkConstants.AUTH_ERROR_MSG, errorMessage);
-
-        context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME,
-                new ErrorStatus(new Error(errorCode, errorMessage)));
+        /* Get a generic error code and message to be sent to the client. An ErrorStatus is generated based on the
+         action execution result, which will be evaluated and trigger an AuthenticationFailedException in the
+         processAuthenticationResponse method.*/
+        context.setProperty(FrameworkConstants.AUTH_ERROR_CODE, errorCodeForClient);
+        context.setProperty(FrameworkConstants.AUTH_ERROR_MSG, String.format(errorMessageForClient, getFriendlyName()));
     }
 }
