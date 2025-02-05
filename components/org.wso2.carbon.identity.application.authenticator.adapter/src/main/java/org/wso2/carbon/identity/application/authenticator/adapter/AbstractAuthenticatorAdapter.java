@@ -25,6 +25,7 @@ import org.wso2.carbon.identity.action.execution.model.ActionExecutionStatus;
 import org.wso2.carbon.identity.action.execution.model.ActionType;
 import org.wso2.carbon.identity.action.execution.model.Error;
 import org.wso2.carbon.identity.action.execution.model.ErrorStatus;
+import org.wso2.carbon.identity.action.execution.model.FailedStatus;
 import org.wso2.carbon.identity.application.authentication.framework.AbstractApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
@@ -99,8 +100,8 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
         } catch (ActionExecutionException e) {
             context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME,
                     new ErrorStatus(
-                            new Error(errorCodeForClient,
-                            String.format(errorMessageForClient, getFriendlyName()))));
+                            new Error("internal_error",
+                            String.format(e.getMessage()))));
             return super.process(request, response, context);
         } finally {
             context.removeProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
@@ -173,13 +174,13 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
          updates the authentication context. */
         ActionExecutionStatus executionStatus = (ActionExecutionStatus)
                 context.getProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
-        String errorCode = (String) context.getProperty(FrameworkConstants.AUTH_ERROR_CODE);
-        String errorMessage = (String) context.getProperty(FrameworkConstants.AUTH_ERROR_MSG);
         if (executionStatus.getStatus() == ActionExecutionStatus.Status.FAILED) {
-            throw new InvalidCredentialsException(errorCode, errorMessage);
+            throw new InvalidCredentialsException("Authentication for the user with external service failed.",
+                    ((FailedStatus) executionStatus).getResponse().getFailureDescription());
         } else if (executionStatus.getStatus() == ActionExecutionStatus.Status.ERROR) {
             setErrorContextForClient(context);
-            throw new AuthenticationFailedException(errorCode, errorMessage);
+            throw new AuthenticationFailedException(
+                    ((ErrorStatus) executionStatus).getResponse().getErrorDescription());
         }
     }
 

@@ -164,6 +164,8 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
                                                              ActionInvocationErrorResponse errorResponse) throws
             ActionExecutionResponseProcessorException {
 
+        /*  We do not set the error code and error message from the authentication action response to the authentication
+         context, as these are internal details for the client side. */
         return new ErrorStatus(new Error(errorResponse.getErrorMessage(), errorResponse.getErrorDescription()));
     }
 }
