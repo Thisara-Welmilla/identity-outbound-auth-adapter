@@ -109,25 +109,22 @@ public class AuthenticationRequestBuilderTest {
     public Object[][] eventContextDataProvider() throws UserIdNotFoundException {
 
         // Custom authenticator engaging in 1st step of authentication flow.
-        Map<String, Object> eventContextForNoUser = new TestEventContextBuilder(
-                 null, SUPER_TENANT_DOMAIN_NAME, headers, parameters, new ArrayList<>())
-                .getEventContext();
+        Map<String, Object> eventContextForNoUser = new TestEventContextBuilder().buildEventContext(
+                 null, SUPER_TENANT_DOMAIN_NAME, headers, parameters, new ArrayList<>());
         AuthenticationRequestEvent expectedEventForNoUser = getExpectedEvent(null);
 
         // Custom authenticator engaging in 2nd step of authentication flow with Local authenticated user.
         AuthenticatedUser localUser = TestAuthenticatedTestUserBuilder.createAuthenticatedUser(
                 AuthenticatedUserConstants.LOCAL_USER_PREFIX, SUPER_TENANT_DOMAIN_NAME);
-        Map<String, Object> eventContextForLocalUser = new TestEventContextBuilder(
-                localUser, SUPER_TENANT_DOMAIN_NAME, headers, parameters, authHistory)
-                .getEventContext();
+        Map<String, Object> eventContextForLocalUser = new TestEventContextBuilder().buildEventContext(
+                localUser, SUPER_TENANT_DOMAIN_NAME, headers, parameters, authHistory);
         AuthenticationRequestEvent expectedEventForLocalUser = getExpectedEvent(localUser);
 
         // Custom authenticator engaging in 2nd step of authentication flow with federated authenticated user.
         AuthenticatedUser fedUser = TestAuthenticatedTestUserBuilder.createAuthenticatedUser(
                 AuthenticatedUserConstants.LOCAL_USER_PREFIX, SUPER_TENANT_DOMAIN_NAME);
-        Map<String, Object> eventContextForFedUser = new TestEventContextBuilder(
-                fedUser, SUPER_TENANT_DOMAIN_NAME, headers, parameters, authHistory)
-                .getEventContext();
+        Map<String, Object> eventContextForFedUser = new TestEventContextBuilder().buildEventContext(
+                fedUser, SUPER_TENANT_DOMAIN_NAME, headers, parameters, authHistory);
         AuthenticationRequestEvent expectedEventForFedUser = getExpectedEvent(fedUser);
 
         return new Object[][]{
