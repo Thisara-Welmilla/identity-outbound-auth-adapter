@@ -28,7 +28,7 @@
     <groupId>org.wso2.carbon.identity.outbound.auth.adapter</groupId>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>identity-outbound-auth-adapter</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>WSO2 Identity - Application Authenticator Adapter for external authentication service</name>
     <description>
@@ -151,6 +151,11 @@
                 <groupId>org.wso2.carbon.identity.outbound.auth.adapter</groupId>
                 <artifactId>org.wso2.carbon.identity.application.authenticator.adapter</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -285,6 +290,20 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
