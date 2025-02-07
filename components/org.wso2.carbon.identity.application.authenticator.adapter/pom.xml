@@ -67,6 +67,10 @@
         </dependency>
         <dependency>
             <groupId>org.wso2.carbon</groupId>
+            <artifactId>org.wso2.carbon.utils</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon</groupId>
             <artifactId>org.wso2.carbon.core.common</artifactId>
         </dependency>
         <dependency>
@@ -137,6 +141,7 @@
                         <Import-Package>
                             javax.servlet.http; version="${imp.pkg.version.javax.servlet}",
                             org.wso2.carbon.user.core.*; version="${carbon.kernel.package.import.version.range}",
+                            org.wso2.carbon.utils.*; version="${carbon.kernel.package.import.version.range}",
                             org.wso2.carbon.core.common.*; version="${carbon.kernel.package.import.version.range}",
                             org.wso2.carbon.user.api.* ; version ="${carbon.user.api.imp.pkg.version.range}",
                             org.osgi.framework; version="${osgi.framework.imp.pkg.version.range}",

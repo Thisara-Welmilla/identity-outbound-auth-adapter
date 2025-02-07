@@ -56,6 +56,7 @@ import org.wso2.carbon.identity.application.authenticator.adapter.util.TestEvent
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.IdentityProvider;
 import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants.AuthenticationType;
+import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.user.core.UserRealm;
 import org.wso2.carbon.user.core.UserStoreManager;
@@ -109,6 +110,7 @@ public class AuthenticationResponseProcessorTest {
     private AbstractUserStoreManager abstractUserStoreManager;
     private UserStoreManager mockedUserStoreManager;
     private AuthenticationResponseProcessor authenticationResponseProcessor;
+    private MockedStatic<LoggerUtils> loggerUtils;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -304,7 +306,7 @@ public class AuthenticationResponseProcessorTest {
                 .buildAuthenticationSuccessResponse(
                         new ArrayList<>(),
                         new AuthenticatedUserData(authUserNoUserId));
-        String errorMessageForMissingUserId = "The 'userId' field is missing in the authentication action response.";
+        String errorMessageForMissingUserId = "The userId field is missing in the authentication action response.";
 
         // Invalid user data without userId.
         ExternallyAuthenticatedUser authUserNonExistingUserId = new ExternallyAuthenticatedUser();
@@ -323,7 +325,7 @@ public class AuthenticationResponseProcessorTest {
                         new ArrayList<>(),
                         new AuthenticatedUserData(authUserMissMatchUserName));
         String errorMessageForMissingMissMatchUserName = "The provided username for the local user in the " +
-                "authentication response does not match the resolved username from the user store.";
+                "authentication response does not match the resolved username from the userStore.";
 
         return new Object[][] {
                 {authContextWithNoUser, authSuccessResponseWithoutUserId,
@@ -455,7 +457,7 @@ public class AuthenticationResponseProcessorTest {
                 .buildAuthenticationSuccessResponse(
                         new ArrayList<>(),
                         new AuthenticatedUserData(authUserNoUserId));
-        String errorMessageForMissingUserId = "The 'userId' field is missing in the authentication action response.";
+        String errorMessageForMissingUserId = "The userId field is missing in the authentication action response.";
 
         return new Object[][] {
                 {authContextWithLocalUserFromFirstStep, authSuccessResponseWithoutUserId,
@@ -560,6 +562,9 @@ public class AuthenticationResponseProcessorTest {
 
         mockedActionExecutorService = mock(ActionExecutorService.class);
         AuthenticatorAdapterDataHolder.getInstance().setActionExecutorService(mockedActionExecutorService);
+
+        loggerUtils = mockStatic(LoggerUtils.class);
+        loggerUtils.when(LoggerUtils::isDiagnosticLogsEnabled).thenReturn(true);
     }
 
     private void createExpectedAuthenticatedUsers() {

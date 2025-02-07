@@ -26,6 +26,9 @@ import org.wso2.carbon.identity.application.authentication.framework.context.Aut
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.Availability;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.Validity;
 import org.wso2.carbon.identity.application.common.model.Claim;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
@@ -39,6 +42,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.LOCAL;
+import static org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.logSuccessResponseExecutionErrorResult;
+import static org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.logSuccessResponseExecutionSuccessResult;
 import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.EXTERNAL_ID_CLAIM;
 import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.USERNAME_CLAIM;
 import static org.wso2.carbon.user.core.UserCoreConstants.DOMAIN_SEPARATOR;
@@ -125,9 +130,10 @@ public class AuthenticatedUserBuilder {
         if (StringUtils.isNotBlank(userFromResponse.getUser().getId())) {
             return userFromResponse.getUser().getId();
         }
-        // Todo: Add diagnostic log for the error scenario.
-        throw new ActionExecutionResponseProcessorException("The 'userId' field is missing in the authentication " +
-                "action response.");
+        String errorMessage = "The userId field is missing in the authentication action response.";
+        logSuccessResponseExecutionErrorResult(new AuthenticationActionExecutionResult("userId", Availability.UNAVAILABLE,
+                Validity.INVALID, errorMessage));
+        throw new ActionExecutionResponseProcessorException(errorMessage);
     }
 
     private AuthenticatedUserData.UserStore resolveUserStoreForLocalUser() {
@@ -135,7 +141,9 @@ public class AuthenticatedUserBuilder {
         if (userFromResponse.getUser().getUserStore() != null) {
             return userFromResponse.getUser().getUserStore();
         }
-        // Todo: Add diagnostic log for the scenario.
+        logSuccessResponseExecutionSuccessResult(new AuthenticationActionExecutionResult("userStore",
+                Availability.UNAVAILABLE, Validity.VALID, "The userStore field is missing in the " +
+                "authentication action response, hence the default userStore domain is applied."));
         return null;
     }
 
@@ -151,11 +159,16 @@ public class AuthenticatedUserBuilder {
                 return userFromUserStore;
             }
         } catch (org.wso2.carbon.user.core.UserStoreException e) {
-            // Todo: Add diagnostic log for the error scenario.
-            throw new ActionExecutionResponseProcessorException("An error occurred while resolving the local user " +
-                    "from the userStore by the provided userId", e);
+            String errorMessage = "An error occurred while resolving the local user from the userStore by the " +
+                    "provided userId: " + userId;
+            logSuccessResponseExecutionErrorResult(new AuthenticationActionExecutionResult("userId",
+                    Availability.AVAILABLE, Validity.INVALID, errorMessage));
+            throw new ActionExecutionResponseProcessorException(errorMessage, e);
         }
-        throw new ActionExecutionResponseProcessorException("No user is found for the given userId: " + userId);
+        String errorMessage = "No user is found for the given userId: " + userId;
+        logSuccessResponseExecutionErrorResult(new AuthenticationActionExecutionResult("userId",
+                Availability.AVAILABLE, Validity.INVALID, errorMessage));
+        throw new ActionExecutionResponseProcessorException(errorMessage);
     }
 
     private Map<ClaimMapping, String> resolveUserNameAndClaimsFromResponse() {
@@ -181,10 +194,15 @@ public class AuthenticatedUserBuilder {
     private void resolveUsernameForLocalUser(User resolvedUser) throws ActionExecutionResponseProcessorException {
 
         if (usernameFromResponse != null && !resolvedUser.getUsername().equals(usernameFromResponse)) {
-            // Todo: Add diagnostic log for the error scenario.
-            throw new ActionExecutionResponseProcessorException("The provided username for the local user in the " +
-                    "authentication response does not match the resolved username from the user store.");
+            String errorMessage = "The provided username for the local user in the authentication response does " +
+                    "not match the resolved username from the userStore.";
+            logSuccessResponseExecutionErrorResult(new AuthenticationActionExecutionResult("claims/" + USERNAME_CLAIM,
+                    Availability.AVAILABLE, Validity.INVALID, errorMessage));
+            throw new ActionExecutionResponseProcessorException(errorMessage);
         }
+        logSuccessResponseExecutionSuccessResult(new AuthenticationActionExecutionResult("userStore",
+                Availability.UNAVAILABLE, Validity.VALID, "The username claim is not provided in the " +
+                "authentication action response, hence setting username resolved from the userStore."));
         authenticatedUser.setUserName(resolvedUser.getUsername());
     }
 
@@ -214,16 +232,21 @@ public class AuthenticatedUserBuilder {
             }
         } catch (UserStoreException e) {
             if (userStore != null && StringUtils.isNotBlank(userStore.getName())) {
-                throw new ActionExecutionResponseProcessorException(String.format("An error occurred while " +
-                        "retrieving the userStore manager for the given userStore domain: %s.", userStore.getName()),
-                        e);
+                String errorMessage = "An error occurred while retrieving the userStore manager for the given " +
+                        "userStore domain: " + userStore.getName();
+                logSuccessResponseExecutionErrorResult(new AuthenticationActionExecutionResult("userStore",
+                        Availability.AVAILABLE, Validity.INVALID, errorMessage));
+                throw new ActionExecutionResponseProcessorException(String.format(errorMessage), e);
             }
             throw new ActionExecutionResponseProcessorException("An error occurred while fetching the userStore " +
                     "manager for the default userStore domain.", e);
         }
         if (userStoreManager == null) {
-            throw new ActionExecutionResponseProcessorException(String.format("No userStore is found for the given " +
-                    "userStore domain name: %s.", userStore.getName()));
+            String errorMessage = "No userStore is found for the given userStore domain name: %s." +
+                    userStore.getName();
+            logSuccessResponseExecutionErrorResult(new AuthenticationActionExecutionResult("userStore",
+                    Availability.AVAILABLE, Validity.INVALID, errorMessage));
+            throw new ActionExecutionResponseProcessorException(errorMessage);
         }
 
         return userStoreManager;
