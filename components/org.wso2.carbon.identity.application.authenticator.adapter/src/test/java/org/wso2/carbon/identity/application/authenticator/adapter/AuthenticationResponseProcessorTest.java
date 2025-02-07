@@ -324,7 +324,7 @@ public class AuthenticationResponseProcessorTest {
                 .buildAuthenticationSuccessResponse(
                         new ArrayList<>(),
                         new AuthenticatedUserData(authUserMissMatchUserName));
-        String errorMessageForMissingMissMatchUserName = "The provided username for the local user in the " +
+        String errorMessageForMissingMissMatchUserName = "The provided username for the user in the " +
                 "authentication response does not match the resolved username from the userStore.";
 
         return new Object[][] {

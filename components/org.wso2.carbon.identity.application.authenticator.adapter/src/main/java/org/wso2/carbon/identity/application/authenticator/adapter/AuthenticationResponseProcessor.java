@@ -45,6 +45,8 @@ import org.wso2.carbon.identity.application.authentication.framework.model.Authe
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.Availability;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.Validity;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants;
@@ -55,7 +57,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
-import static org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.logIncompleteResponseExecutionSuccessResult;
+import static org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.logIncompleteResponseExecutionResult;
 
 /**
  * This is responsible for processing authentication response from the external authentication service.
@@ -128,8 +130,8 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
             errorMessage = String.format("The list of performable operations is empty. For the INCOMPLETE action " +
                             "invocation status, there must be a REDIRECTION operation defined for the %s action type.",
                     getSupportedActionType());
-            logIncompleteResponseExecutionSuccessResult(new AuthenticationActionExecutionResult(operationPath,
-                    AuthenticationActionExecutionResult.Availability.UNAVAILABLE, AuthenticationActionExecutionResult.Validity.INVALID,
+            logIncompleteResponseExecutionResult(new AuthenticationActionExecutionResult(operationPath,
+                    Availability.UNAVAILABLE, Validity.INVALID,
                     errorMessage));
             throw new ActionExecutionResponseProcessorException(errorMessage);
         }
@@ -137,8 +139,8 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
         if (operationsToPerform.size() != 1) {
             errorMessage = String.format("The list of performable operations must contain only one operation for " +
                     "the INCOMPLETE action invocation status for the %s action type.", getSupportedActionType());
-            logIncompleteResponseExecutionSuccessResult(new AuthenticationActionExecutionResult(operationPath,
-                    AuthenticationActionExecutionResult.Availability.AVAILABLE, AuthenticationActionExecutionResult.Validity.INVALID,
+            logIncompleteResponseExecutionResult(new AuthenticationActionExecutionResult(operationPath,
+                    Availability.AVAILABLE, Validity.INVALID,
                     errorMessage));
             throw new ActionExecutionResponseProcessorException(errorMessage);
         }
@@ -146,8 +148,8 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
         if (!Operation.REDIRECT.equals(operationsToPerform.get(0).getOp())) {
             errorMessage = String.format("The operation defined for the INCOMPLETE action invocation status must be " +
                             "a REDIRECTION operation for the %s action type.", getSupportedActionType());
-            logIncompleteResponseExecutionSuccessResult(new AuthenticationActionExecutionResult(operationPath,
-                    AuthenticationActionExecutionResult.Availability.UNAVAILABLE, AuthenticationActionExecutionResult.Validity.INVALID,
+            logIncompleteResponseExecutionResult(new AuthenticationActionExecutionResult(operationPath,
+                    Availability.UNAVAILABLE, Validity.INVALID,
                     errorMessage));
             throw new ActionExecutionResponseProcessorException(errorMessage);
         }
@@ -155,8 +157,8 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
         if (operationsToPerform.get(0).getUrl() == null) {
             errorMessage = String.format("The REDIRECTION operation defined for the INCOMPLETE action invocation " +
                     "status must have a valid URL for the %s action type.", getSupportedActionType());
-            logIncompleteResponseExecutionSuccessResult(new AuthenticationActionExecutionResult(operationPath,
-                    AuthenticationActionExecutionResult.Availability.AVAILABLE, AuthenticationActionExecutionResult.Validity.INVALID,
+            logIncompleteResponseExecutionResult(new AuthenticationActionExecutionResult(operationPath,
+                    Availability.AVAILABLE, Validity.INVALID,
                     errorMessage));
             throw new ActionExecutionResponseProcessorException(errorMessage);
         }

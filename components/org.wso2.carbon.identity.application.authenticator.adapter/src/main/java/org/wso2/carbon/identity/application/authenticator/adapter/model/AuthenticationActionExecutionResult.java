@@ -71,7 +71,7 @@ public class AuthenticationActionExecutionResult {
         return fieldName;
     }
 
-    public static void logSuccessResponseExecutionErrorResult(
+    public static void logSuccessResponseDataValidationError(
             AuthenticationActionExecutionResult executionResult) {
 
         logResponseExecutionResult(executionResult, DiagnosticLog.ResultStatus.FAILED,
@@ -79,7 +79,7 @@ public class AuthenticationActionExecutionResult {
                         "response for the %s field.", executionResult.getFieldName()));
     }
 
-    public static void logSuccessResponseExecutionSuccessResult(
+    public static void logSuccessResponseWithDefaultsForMissingData(
             AuthenticationActionExecutionResult executionResult) {
 
         logResponseExecutionResult(executionResult, DiagnosticLog.ResultStatus.SUCCESS,
@@ -87,7 +87,7 @@ public class AuthenticationActionExecutionResult {
                         "response, the default value is used.", executionResult.getFieldName()));
     }
 
-    public static void logIncompleteResponseExecutionSuccessResult(
+    public static void logIncompleteResponseExecutionResult(
             AuthenticationActionExecutionResult executionResult) {
 
         logResponseExecutionResult(executionResult, DiagnosticLog.ResultStatus.FAILED,
