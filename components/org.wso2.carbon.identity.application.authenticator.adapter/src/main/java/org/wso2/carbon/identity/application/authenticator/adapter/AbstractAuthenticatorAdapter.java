@@ -100,8 +100,7 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
         } catch (ActionExecutionException e) {
             context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME,
                     new ErrorStatus(
-                            new Error("internal_error",
-                            String.format(e.getMessage()))));
+                            new Error("internal_error", String.format(e.getMessage()))));
             return super.process(request, response, context);
         } finally {
             context.removeProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
@@ -175,12 +174,12 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
         ActionExecutionStatus executionStatus = (ActionExecutionStatus)
                 context.getProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
         if (executionStatus.getStatus() == ActionExecutionStatus.Status.FAILED) {
-            throw new InvalidCredentialsException("Authentication for the user with external service failed.",
-                    ((FailedStatus) executionStatus).getResponse().getFailureDescription());
+            throw new InvalidCredentialsException("An authentication failure response received from the " +
+                    "authentication action." + ((FailedStatus) executionStatus).getResponse().getFailureDescription());
         } else if (executionStatus.getStatus() == ActionExecutionStatus.Status.ERROR) {
             setErrorContextForClient(context);
-            throw new AuthenticationFailedException(
-                    ((ErrorStatus) executionStatus).getResponse().getErrorDescription());
+            throw new AuthenticationFailedException("An error occurred while authenticating user with authentication " +
+                    "action." + ((ErrorStatus) executionStatus).getResponse().getErrorDescription());
         }
     }
 

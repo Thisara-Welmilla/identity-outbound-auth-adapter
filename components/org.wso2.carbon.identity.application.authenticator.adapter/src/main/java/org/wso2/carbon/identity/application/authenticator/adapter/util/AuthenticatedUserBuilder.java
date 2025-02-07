@@ -86,7 +86,7 @@ public class AuthenticatedUserBuilder {
         // Set the user ID to the external ID claim for federated authenticators.
         attributeMap.put(buildClaimMapping(EXTERNAL_ID_CLAIM), userId);
         authenticatedUser.setUserAttributes(attributeMap);
-        resolveUsernameForFederatedUser();
+        setUsernameForFederatedUser();
         authenticatedUser.setTenantDomain(context.getTenantDomain());
         authenticatedUser.setFederatedUser(true);
         return authenticatedUser;
@@ -170,7 +170,7 @@ public class AuthenticatedUserBuilder {
         return userAttributes;
     }
 
-    private void resolveUsernameForFederatedUser() {
+    private void setUsernameForFederatedUser() {
 
         if (StringUtils.isBlank(usernameFromResponse) && LOG.isDebugEnabled()) {
             LOG.debug("The username for the federated user is missing in the authentication response.");
