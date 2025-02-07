@@ -18,17 +18,15 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.util;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationErrorResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationFailureResponse;
+import org.wso2.carbon.identity.action.execution.model.ActionInvocationIncompleteResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationSuccessResponse;
 import org.wso2.carbon.identity.action.execution.model.PerformableOperation;
 import org.wso2.carbon.identity.action.execution.model.ResponseData;
-import org.wso2.carbon.identity.action.execution.model.UserStore;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticationAdapterConstants.AuthenticatingUserConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,31 +79,33 @@ public class TestActionInvocationResponseBuilder {
      *
      * @return ActionInvocationResponse
      */
-    public static ActionInvocationSuccessResponse buildAuthenticationRedirectResponse(
+    public static ActionInvocationIncompleteResponse buildAuthenticationRedirectResponse(
             List<PerformableOperation> operations) {
 
-        return new ActionInvocationSuccessResponse.Builder()
+        return new ActionInvocationIncompleteResponse.Builder()
                 .actionStatus(ActionInvocationResponse.Status.INCOMPLETE)
                 .operations(operations)
                 .build();
     }
 
-    public static class ExternallyAuthenticatedUser {
+    public static class ExternallyAuthenticatedUser extends AuthenticatedUserData.User {
 
-        ObjectMapper objectMapper = new ObjectMapper();
         AuthenticatedUserData.Claim claim1 = new AuthenticatedUserData.Claim("claim-1", "value-1");
-        AuthenticatedUserData.Claim  claim2 = new AuthenticatedUserData.Claim ("claim-2", "value-2");
+        AuthenticatedUserData.Claim  userNameClaim = new AuthenticatedUserData.Claim(
+                AuthenticatorAdapterConstants.USERNAME_CLAIM, AuthenticatingUserConstants.USERNAME);
 
         private String id;
         private List<String> groups;
         private List<AuthenticatedUserData.Claim> claims;
-        private UserStore userStore;
+        private AuthenticatedUserData.UserStore userStore;
 
         public ExternallyAuthenticatedUser() {
 
-            id = "default-id";
+            id = AuthenticatingUserConstants.USERID;
+            userStore = new AuthenticatedUserData.UserStore(
+                    AuthenticatingUserConstants.USER_STORE_ID, AuthenticatingUserConstants.USER_STORE_NAME);
             groups = new ArrayList<>();
-            claims = new ArrayList<>(List.of(claim1, claim2));
+            claims = new ArrayList<>(List.of(claim1, userNameClaim));
         }
 
         public void setId(String id) {
@@ -138,20 +138,20 @@ public class TestActionInvocationResponseBuilder {
             return claims;
         }
 
-        public void setUserStore(UserStore userStore) {
+        public void setUserStore(AuthenticatedUserData.UserStore userStore) {
 
             this.userStore = userStore;
         }
 
-        public UserStore getUserStore() {
+        public AuthenticatedUserData.UserStore getUserStore() {
 
             return userStore;
         }
 
-        public String covertJsonString() throws JsonProcessingException {
+        public void setUserName(String userName) {
 
-            objectMapper.setSerializationInclusion((JsonInclude.Include.NON_NULL));
-            return objectMapper.writeValueAsString(this);
+            claims.removeIf(claim -> AuthenticatorAdapterConstants.USERNAME_CLAIM.equals(claim.getUri()));
+            claims.add(new AuthenticatedUserData.Claim(AuthenticatorAdapterConstants.USERNAME_CLAIM, userName));
         }
     }
 }

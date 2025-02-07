@@ -23,11 +23,16 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionException;
 import org.wso2.carbon.identity.action.execution.model.ActionExecutionStatus;
 import org.wso2.carbon.identity.action.execution.model.ActionType;
+import org.wso2.carbon.identity.action.execution.model.Error;
+import org.wso2.carbon.identity.action.execution.model.ErrorStatus;
+import org.wso2.carbon.identity.action.execution.model.FailedStatus;
 import org.wso2.carbon.identity.application.authentication.framework.AbstractApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
+import org.wso2.carbon.identity.application.authentication.framework.exception.InvalidCredentialsException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
+import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.common.model.Property;
@@ -50,6 +55,11 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     private static final Log LOG = LogFactory.getLog(AbstractAuthenticatorAdapter.class);
     protected String authenticatorName;
     protected String friendlyName;
+    protected AuthenticatorPropertyConstants.AuthenticationType authenticationType = AuthenticatorPropertyConstants
+            .AuthenticationType.IDENTIFICATION;
+
+    private static final String errorCodeForClient = "authentication_processing_error";
+    private static final String errorMessageForClient = "An error occurred while authenticating user with %s.";
 
     @Override
     public boolean canHandle(HttpServletRequest request) {
@@ -62,49 +72,57 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
                                            AuthenticationContext context)
             throws AuthenticationFailedException, LogoutFailedException {
 
-        if (context.isLogoutRequest()) {
-            return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
+        try {
+            if (context.isLogoutRequest()) {
+                return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
+            }
+
+            Map<String, Object> eventContext = new HashMap<>();
+            eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
+            eventContext.put(AuthenticatorAdapterConstants.AUTH_RESPONSE, response);
+            eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, context);
+            eventContext.put(AuthenticatorAdapterConstants.AUTH_TYPE, getAuthenticationType());
+
+            /* Execute the corresponding action from the authentication config and add the ActionExecutionStatus result
+             to the context which will be used in processAuthenticationResponse method. */
+            ActionExecutionStatus executionStatus = executeAction(context, eventContext, context.getTenantDomain());
+            context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME, executionStatus);
+
+            if (executionStatus.getStatus() == ActionExecutionStatus.Status.INCOMPLETE) {
+                context.setCurrentAuthenticator(getName());
+                context.setRetrying(false);
+                return AuthenticatorFlowStatus.INCOMPLETE;
+            }
+
+            /* Invoke the process method in the AbstractApplicationAuthenticator class to continue processing the
+              AuthenticationContext. */
+            return super.process(request, response, context);
+        } catch (ActionExecutionException e) {
+            context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME,
+                    new ErrorStatus(
+                            new Error("internal_error", String.format(e.getMessage()))));
+            return super.process(request, response, context);
+        } finally {
+            context.removeProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
         }
-
-        /* TODO: Catch AuthenticationFailedException error and continue with super.process, and handle error at
-            processAuthenticationResponse method. */
-        context.removeProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
-        Map<String, Object> eventContext = new HashMap<>();
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_RESPONSE, response);
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, context);
-        ActionExecutionStatus executionStatus = executeAction(context, eventContext, context.getTenantDomain());
-        context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME, executionStatus);
-
-        if (executionStatus.getStatus() == ActionExecutionStatus.Status.INCOMPLETE) {
-            context.setCurrentAuthenticator(getName());
-            context.setRetrying(false);
-            return AuthenticatorFlowStatus.INCOMPLETE;
-        }
-
-        return super.process(request, response, context);
     }
 
     private ActionExecutionStatus executeAction(AuthenticationContext context, Map<String, Object> eventContext,
-                                                String tenantDomain) throws AuthenticationFailedException {
+                                                String tenantDomain) throws ActionExecutionException {
 
         Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
         String actionId = authenticatorProperties.get(AuthenticatorAdapterConstants.ACTION_ID_CONFIG);
 
-        try {
-            ActionExecutionStatus executionStatus =
-                    AuthenticatorAdapterDataHolder.getInstance().getActionExecutorService()
-                            .execute(ActionType.AUTHENTICATION, actionId, eventContext, tenantDomain);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug(String.format(
-                        "Invoked authentication action for Authentication flow ID: %s. Status: %s",
-                        eventContext.get(AuthenticatorAdapterConstants.FLOW_ID),
-                        Optional.ofNullable(executionStatus).isPresent() ? executionStatus.getStatus() : "NA"));
-            }
-            return executionStatus;
-        } catch (ActionExecutionException e) {
-            throw new AuthenticationFailedException("Error while executing authentication action", e);
+        ActionExecutionStatus executionStatus =
+                AuthenticatorAdapterDataHolder.getInstance().getActionExecutorService()
+                        .execute(ActionType.AUTHENTICATION, actionId, eventContext, tenantDomain);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug(String.format(
+                    "Invoked authentication action for Authentication flow ID: %s. Status: %s",
+                    eventContext.get(AuthenticatorAdapterConstants.FLOW_ID),
+                    Optional.ofNullable(executionStatus).isPresent() ? executionStatus.getStatus() : "NA"));
         }
+        return executionStatus;
     }
 
     @Override
@@ -117,6 +135,11 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     public String getName() {
 
         return authenticatorName;
+    }
+
+    public AuthenticatorPropertyConstants.AuthenticationType getAuthenticationType() {
+
+        return authenticationType;
     }
 
     @Override
@@ -142,14 +165,21 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     protected void processAuthenticationResponse(HttpServletRequest request, HttpServletResponse response,
                                                  AuthenticationContext context) throws AuthenticationFailedException {
 
+        /* This method is invoked from the AbstractApplicationAuthenticator class to handle the authentication response.
+         When the ActionExecutionStatus is SUCCESS, the authenticated user is built based on the action response in the
+         processSuccessResponse method within the AuthenticationResponseProcessor class. In this method, if the
+         ActionExecutionStatus is FAILED, an InvalidCredentialsException is thrown, and if the ActionExecutionStatus is
+         ERROR, an AuthenticationFailedException is thrown. Based on the exception, the process method of the superclass
+         updates the authentication context. */
         ActionExecutionStatus executionStatus = (ActionExecutionStatus)
                 context.getProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME);
-        if (executionStatus.getStatus() == ActionExecutionStatus.Status.FAILED ||
-                executionStatus.getStatus() == ActionExecutionStatus.Status.ERROR) {
-            /* TODO: Improve AuthenticationFailedException error messages and description with specific error content
-                from the authentication action execution. */
-            throw new AuthenticationFailedException("An error occurred while authenticating with user the " +
-                    " external authentication authentication service.");
+        if (executionStatus.getStatus() == ActionExecutionStatus.Status.FAILED) {
+            throw new InvalidCredentialsException("An authentication failure response received from the " +
+                    "authentication action." + ((FailedStatus) executionStatus).getResponse().getFailureDescription());
+        } else if (executionStatus.getStatus() == ActionExecutionStatus.Status.ERROR) {
+            setErrorContextForClient(context);
+            throw new AuthenticationFailedException("An error occurred while authenticating user with authentication " +
+                    "action." + ((ErrorStatus) executionStatus).getResponse().getErrorDescription());
         }
     }
 
@@ -177,5 +207,14 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
     public AuthenticatorPropertyConstants.DefinedByType getDefinedByType() {
 
         return AuthenticatorPropertyConstants.DefinedByType.USER;
+    }
+
+    private void setErrorContextForClient(AuthenticationContext context) {
+
+        /* Get a generic error code and message to be sent to the client. An ErrorStatus is generated based on the
+         action execution result, which will be evaluated and trigger an AuthenticationFailedException in the
+         processAuthenticationResponse method.*/
+        context.setProperty(FrameworkConstants.AUTH_ERROR_CODE, errorCodeForClient);
+        context.setProperty(FrameworkConstants.AUTH_ERROR_MSG, String.format(errorMessageForClient, getFriendlyName()));
     }
 }

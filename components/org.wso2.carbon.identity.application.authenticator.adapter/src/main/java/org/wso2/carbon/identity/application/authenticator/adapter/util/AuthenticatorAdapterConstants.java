@@ -26,9 +26,11 @@ public class AuthenticatorAdapterConstants {
     public static final String AUTHENTICATOR_NAME = "AbstractAuthenticatorAdapter";
     public static final String WSO2_CLAIM_DIALECT = "http://wso2.org/claims";
     public static final String EXTERNAL_ID_CLAIM = "http://wso2.org/claims/externalID";
+    public static final String USERNAME_CLAIM = "http://wso2.org/claims/username";
     public static final String AUTH_REQUEST = "authenticationRequest";
     public static final String AUTH_RESPONSE = "authenticationResponse";
     public static final String AUTH_CONTEXT = "authContext";
+    public static final String AUTH_TYPE = "authenticatorType";
     public static final String FLOW_ID = "flowId";
     public static final String ACTION_ID_CONFIG = "actionId";;
     public static final String LOCAL_IDP = "LOCAL";

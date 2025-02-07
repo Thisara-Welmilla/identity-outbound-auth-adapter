@@ -20,31 +20,74 @@ package org.wso2.carbon.identity.application.authenticator.adapter;
 
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import org.wso2.carbon.identity.action.execution.ActionExecutorService;
+import org.wso2.carbon.identity.action.execution.model.IncompleteStatus;
+import org.wso2.carbon.identity.action.execution.model.SuccessStatus;
 import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.ExternalIdPConfig;
+import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
-import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
-import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
+import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
-import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorConfig;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticatedTestUserBuilder;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticationAdapterConstants.AuthenticatingUserConstants;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.TestEventContextBuilder;
+import org.wso2.carbon.identity.application.common.model.IdentityProvider;
+import org.wso2.carbon.identity.application.common.model.UserDefinedFederatedAuthenticatorConfig;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.wso2.carbon.base.MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
+
+/**
+ * Unit tests for FederatedAuthenticatorAdapter.
+ */
 public class FederatedAuthenticatorAdapterTest {
 
     private static final String AUTHENTICATOR_NAME = "FederatedAuthenticatorAdapter";
     private static final String FRIENDLY_NAME = "Federated Authenticator Adapter";
-
     private FederatedAuthenticatorAdapter federatedAuthenticatorAdapter;
+
+    private final HttpServletRequest request = mock(HttpServletRequest.class);
+    private final HttpServletResponse response = mock(HttpServletResponse.class);
+    private AuthenticationContext authContextWithNoUser;
+    private AuthenticationContext authContextWithLocalUserFromFirstStep;
+    private AuthenticationContext authContextWithFedUserFromFirstStep;
+    private AuthenticatedUser localAuthenticatedUser;
+    private AuthenticatedUser federatedAuthenticatedUser;
+    private AuthenticatedUser expectedAuthenticatedUser;
+    private ActionExecutorService mockedActionExecutorService;
+    private static ArrayList<AuthHistory> authHistory;
 
     @BeforeClass
     public void setUp() {
 
-        FederatedAuthenticatorConfig fedConfig = new FederatedAuthenticatorConfig();
+        UserDefinedFederatedAuthenticatorConfig fedConfig = new UserDefinedFederatedAuthenticatorConfig();
         fedConfig.setName(AUTHENTICATOR_NAME);
         fedConfig.setDisplayName(FRIENDLY_NAME);
         federatedAuthenticatorAdapter = new FederatedAuthenticatorAdapter(fedConfig);
+
+        mockedActionExecutorService = mock(ActionExecutorService.class);
+        AuthenticatorAdapterDataHolder.getInstance().setActionExecutorService(mockedActionExecutorService);
+
+        authHistory = TestEventContextBuilder.buildAuthHistory();
+        buildEventContext();
+
+        expectedAuthenticatedUser = new AuthenticatedUser();
+        expectedAuthenticatedUser.setUserId(AuthenticatingUserConstants.USERID);
+        expectedAuthenticatedUser.setUserStoreDomain(AuthenticatingUserConstants.USER_STORE_NAME);
+        expectedAuthenticatedUser.setUserName(AuthenticatingUserConstants.USERNAME);
+        expectedAuthenticatedUser.setTenantDomain(SUPER_TENANT_DOMAIN_NAME);
     }
 
     @Test
@@ -66,33 +109,68 @@ public class FederatedAuthenticatorAdapterTest {
                 AuthenticatorAdapterConstants.WSO2_CLAIM_DIALECT);
     }
 
-    @Test
-    public void testSuccessAuthenticationRequestProcess(HttpServletRequest request, HttpServletResponse response,
-                                                        AuthenticationContext context)
-            throws AuthenticationFailedException, LogoutFailedException {
+    @DataProvider
+    public Object[][] provideAuthenticationContext() {
 
+        return new Object[][]{
+                {authContextWithNoUser, 1},
+                {authContextWithLocalUserFromFirstStep, 2},
+                {authContextWithFedUserFromFirstStep, 2}
+        };
+    }
+
+    @Test(dataProvider = "provideAuthenticationContext")
+    public void testSuccessAuthenticationRequestProcess(AuthenticationContext context, int currentStep)
+            throws Exception {
+
+        when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenAnswer(invocation -> {
+            context.setSubject(expectedAuthenticatedUser);
+            return new SuccessStatus.Builder().setResponseContext(new HashMap<>()).build();
+        });
+        context.setCurrentStep(currentStep);
         AuthenticatorFlowStatus authStatus = federatedAuthenticatorAdapter.process(request, response, context);
 
         Assert.assertEquals(authStatus, AuthenticatorFlowStatus.SUCCESS_COMPLETED);
     }
 
-    @Test
-    public void testIncompleteAuthenticationRequestProcess(HttpServletRequest request, HttpServletResponse response,
-                                                           AuthenticationContext context)
-            throws AuthenticationFailedException, LogoutFailedException {
+    @Test(dataProvider = "provideAuthenticationContext")
+    public void testIncompleteAuthenticationRequestProcess(AuthenticationContext context, int currentStep)
+            throws Exception {
 
+        when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenReturn(
+                new IncompleteStatus.Builder().responseContext(new HashMap<>()).build());
+        context.setCurrentStep(currentStep);
         AuthenticatorFlowStatus authStatus = federatedAuthenticatorAdapter.process(request, response, context);
 
         Assert.assertEquals(authStatus, AuthenticatorFlowStatus.INCOMPLETE);
+        Assert.assertEquals(context.getCurrentAuthenticator(), AUTHENTICATOR_NAME);
+        Assert.assertFalse(context.isRetrying());
     }
 
-    @Test
-    public void testFailureAuthenticationRequestProcess(HttpServletRequest request, HttpServletResponse response,
-                                                        AuthenticationContext context)
-            throws AuthenticationFailedException, LogoutFailedException {
+    public void buildEventContext() {
 
-        AuthenticatorFlowStatus authStatus = federatedAuthenticatorAdapter.process(request, response, context);
+        IdentityProvider idp = new IdentityProvider();
+        idp.setIdentityProviderName("testIdp");
 
-        Assert.assertEquals(authStatus, AuthenticatorFlowStatus.FAIL_COMPLETED);
+        // Custom authenticator engaging in 1st step of authentication flow.
+        authContextWithNoUser = new TestEventContextBuilder().buildAuthenticationContext(
+                null, SUPER_TENANT_DOMAIN_NAME, new ArrayList<AuthHistory>());
+        authContextWithNoUser.setExternalIdP(new ExternalIdPConfig(idp));
+
+        // Custom authenticator engaging in 2nd step of authentication flow with Local authenticated user.
+        localAuthenticatedUser = TestAuthenticatedTestUserBuilder.createAuthenticatedUser(
+                TestAuthenticatedTestUserBuilder.AuthenticatedUserConstants.LOCAL_USER_PREFIX,
+                SUPER_TENANT_DOMAIN_NAME);
+        authContextWithLocalUserFromFirstStep = new TestEventContextBuilder().buildAuthenticationContext(
+                localAuthenticatedUser, SUPER_TENANT_DOMAIN_NAME, authHistory);
+        authContextWithLocalUserFromFirstStep.setExternalIdP(new ExternalIdPConfig(idp));
+
+        // Custom authenticator engaging in 2nd step of authentication flow with federated authenticated user.
+        federatedAuthenticatedUser = TestAuthenticatedTestUserBuilder.createAuthenticatedUser(
+                TestAuthenticatedTestUserBuilder.AuthenticatedUserConstants.LOCAL_USER_PREFIX,
+                SUPER_TENANT_DOMAIN_NAME);
+        authContextWithFedUserFromFirstStep = new TestEventContextBuilder().buildAuthenticationContext(
+                federatedAuthenticatedUser, SUPER_TENANT_DOMAIN_NAME, authHistory);
+        authContextWithFedUserFromFirstStep.setExternalIdP(new ExternalIdPConfig(idp));
     }
 }

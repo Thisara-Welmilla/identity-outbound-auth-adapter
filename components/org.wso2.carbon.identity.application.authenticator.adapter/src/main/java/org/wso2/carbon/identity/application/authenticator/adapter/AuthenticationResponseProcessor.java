@@ -42,9 +42,11 @@ import org.wso2.carbon.identity.action.execution.model.Success;
 import org.wso2.carbon.identity.action.execution.model.SuccessStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
+import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants;
 
 import java.io.IOException;
 import java.util.List;
@@ -71,12 +73,19 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
             ActionInvocationSuccessResponse actionInvocationSuccessResponse)
             throws ActionExecutionResponseProcessorException {
 
-        /* TODO: 1. Validate whether authenticated user data are present in the action invocation response for the
-            IDENTIFIER local authenticators and Federated authenticators.
-            2. Move this code logic to the processAuthenticationResponse method in the AbstractAuthenticatorAdapter.
-         */
         AuthenticationContext context = (AuthenticationContext) eventContext.get(
                 AuthenticatorAdapterConstants.AUTH_CONTEXT);
+        AuthenticatorPropertyConstants.AuthenticationType authType = (AuthenticatorPropertyConstants.AuthenticationType)
+                eventContext.get(AuthenticatorAdapterConstants.AUTH_TYPE);
+        if (actionInvocationSuccessResponse.getData() == null) {
+            if (AuthenticatorPropertyConstants.AuthenticationType.IDENTIFICATION.equals(authType)) {
+                // TODO: Add diagnostic log for this error scenario.
+                throw new ActionExecutionResponseProcessorException("The 'user' field is missing in the" +
+                        " authentication action response. This field is required for IDENTIFICATION " +
+                        "authentication.");
+            }
+            context.setSubject(context.getLastAuthenticatedUser());
+        }
         AuthenticatedUserData authenticatedUserData = (AuthenticatedUserData) actionInvocationSuccessResponse.getData();
         AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(authenticatedUserData, context)
                 .buildAuthenticateduser();
@@ -140,6 +149,11 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
                                                       ActionInvocationFailureResponse failureResponse) throws
             ActionExecutionResponseProcessorException {
 
+        AuthenticationContext context = (AuthenticationContext) eventContext.get(
+                AuthenticatorAdapterConstants.AUTH_CONTEXT);
+        context.setProperty(FrameworkConstants.AUTH_ERROR_CODE, failureResponse.getFailureReason());
+        context.setProperty(FrameworkConstants.AUTH_ERROR_MSG, failureResponse.getFailureDescription());
+
         return new FailedStatus(new Failure(failureResponse.getFailureReason(),
                 failureResponse.getFailureDescription()));
     }
@@ -150,6 +164,8 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
                                                              ActionInvocationErrorResponse errorResponse) throws
             ActionExecutionResponseProcessorException {
 
+        /*  We do not set the error code and error message from the authentication action response to the authentication
+         context, as these are internal details for the client side. */
         return new ErrorStatus(new Error(errorResponse.getErrorMessage(), errorResponse.getErrorDescription()));
     }
 }

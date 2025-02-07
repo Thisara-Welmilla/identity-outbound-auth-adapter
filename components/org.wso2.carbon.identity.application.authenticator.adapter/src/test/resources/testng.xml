@@ -22,8 +22,8 @@
         <classes>
             <class name="org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationRequestBuilderTest"/>
             <class name="org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationResponseProcessorTest"/>
-            <class name="org.wso2.carbon.identity.application.authenticator.adapter.FederatedAuthenticatorAdapter"/>
-            <class name="org.wso2.carbon.identity.application.authenticator.adapter.LocalAuthenticatorAdapter"/>
+            <class name="org.wso2.carbon.identity.application.authenticator.adapter.FederatedAuthenticatorAdapterTest"/>
+            <class name="org.wso2.carbon.identity.application.authenticator.adapter.LocalAuthenticatorAdapterTest"/>
         </classes>
     </test>
 
