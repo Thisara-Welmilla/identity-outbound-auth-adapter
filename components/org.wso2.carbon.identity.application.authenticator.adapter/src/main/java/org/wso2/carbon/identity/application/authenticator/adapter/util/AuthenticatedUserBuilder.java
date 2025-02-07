@@ -153,7 +153,7 @@ public class AuthenticatedUserBuilder {
         } catch (org.wso2.carbon.user.core.UserStoreException e) {
             // Todo: Add diagnostic log for the error scenario.
             throw new ActionExecutionResponseProcessorException("An error occurred while resolving the local user " +
-                    "from the userStore BY the provided userId", e);
+                    "from the userStore by the provided userId", e);
         }
         throw new ActionExecutionResponseProcessorException("No user is found for the given userId: " + userId);
     }
@@ -218,8 +218,8 @@ public class AuthenticatedUserBuilder {
                         "retrieving the userStore manager for the given userStore domain: %s.", userStore.getName()),
                         e);
             }
-            throw new ActionExecutionResponseProcessorException("An error occurred while retrieving " +
-                    "the userStore manager the given userStore domain.", e);
+            throw new ActionExecutionResponseProcessorException("An error occurred while fetching the userStore " +
+                    "manager for the default userStore domain.", e);
         }
         if (userStoreManager == null) {
             throw new ActionExecutionResponseProcessorException(String.format("No userStore is found for the given " +
