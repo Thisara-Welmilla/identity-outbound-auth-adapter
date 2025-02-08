@@ -44,8 +44,12 @@ import org.wso2.carbon.identity.application.authentication.framework.context.Aut
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.Availability;
+import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.Validity;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.DiagnosticLogger;
 import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants;
 
 import java.io.IOException;
@@ -79,10 +83,11 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
                 eventContext.get(AuthenticatorAdapterConstants.AUTH_TYPE);
         if (actionInvocationSuccessResponse.getData() == null) {
             if (AuthenticatorPropertyConstants.AuthenticationType.IDENTIFICATION.equals(authType)) {
-                // TODO: Add diagnostic log for this error scenario.
-                throw new ActionExecutionResponseProcessorException("The 'user' field is missing in the" +
-                        " authentication action response. This field is required for IDENTIFICATION " +
-                        "authentication.");
+                String errorMessage = "The user field is missing in the authentication action response. This field " +
+                        "is required for IDENTIFICATION authentication.";
+                DiagnosticLogger.logSuccessResponseDataValidationError(new AuthenticationActionExecutionResult("",
+                        Availability.UNAVAILABLE, Validity.INVALID, errorMessage));
+                throw new ActionExecutionResponseProcessorException(errorMessage);
             }
             context.setSubject(context.getLastAuthenticatedUser());
         }
@@ -118,28 +123,44 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
     private void validateOperationForIncompleteStatus(List<PerformableOperation> operationsToPerform)
             throws ActionExecutionResponseProcessorException {
 
+        String errorMessage;
+        String operationPath = "/operations/";
+
         if (operationsToPerform == null) {
-            throw new ActionExecutionResponseProcessorException(String.format("The list of performable operations is " +
-                    "empty. For the INCOMPLETE action invocation status, there must be a REDIRECTION operation " +
-                    "defined for the %s action type.", getSupportedActionType()));
+            errorMessage = String.format("The list of performable operations is empty. For the INCOMPLETE action " +
+                            "invocation status, there must be a REDIRECTION operation defined for the %s action type.",
+                    getSupportedActionType());
+            DiagnosticLogger.logIncompleteResponseExecutionResult(new AuthenticationActionExecutionResult(operationPath,
+                    Availability.UNAVAILABLE, Validity.INVALID,
+                    errorMessage));
+            throw new ActionExecutionResponseProcessorException(errorMessage);
         }
 
         if (operationsToPerform.size() != 1) {
-            throw new ActionExecutionResponseProcessorException(String.format("The list of performable operations " +
-                    "must contain only one operation for the INCOMPLETE action invocation status for the %s " +
-                    "action type.", getSupportedActionType()));
+            errorMessage = String.format("The list of performable operations must contain only one operation for " +
+                    "the INCOMPLETE action invocation status for the %s action type.", getSupportedActionType());
+            DiagnosticLogger.logIncompleteResponseExecutionResult(new AuthenticationActionExecutionResult(operationPath,
+                    Availability.AVAILABLE, Validity.INVALID,
+                    errorMessage));
+            throw new ActionExecutionResponseProcessorException(errorMessage);
         }
 
         if (!Operation.REDIRECT.equals(operationsToPerform.get(0).getOp())) {
-            throw new ActionExecutionResponseProcessorException(String.format("The operation defined for the " +
-                    "INCOMPLETE action invocation status must be a REDIRECTION operation for the %s action type.",
-                    getSupportedActionType()));
+            errorMessage = String.format("The operation defined for the INCOMPLETE action invocation status must be " +
+                            "a REDIRECTION operation for the %s action type.", getSupportedActionType());
+            DiagnosticLogger.logIncompleteResponseExecutionResult(new AuthenticationActionExecutionResult(operationPath,
+                    Availability.UNAVAILABLE, Validity.INVALID,
+                    errorMessage));
+            throw new ActionExecutionResponseProcessorException(errorMessage);
         }
 
         if (operationsToPerform.get(0).getUrl() == null) {
-            throw new ActionExecutionResponseProcessorException(String.format("The REDIRECTION operation defined " +
-                    "for the INCOMPLETE action invocation status must have a valid URL for the %s action type.",
-                    getSupportedActionType()));
+            errorMessage = String.format("The REDIRECTION operation defined for the INCOMPLETE action invocation " +
+                    "status must have a valid URL for the %s action type.", getSupportedActionType());
+            DiagnosticLogger.logIncompleteResponseExecutionResult(new AuthenticationActionExecutionResult(operationPath,
+                    Availability.AVAILABLE, Validity.INVALID,
+                    errorMessage));
+            throw new ActionExecutionResponseProcessorException(errorMessage);
         }
     }
 
