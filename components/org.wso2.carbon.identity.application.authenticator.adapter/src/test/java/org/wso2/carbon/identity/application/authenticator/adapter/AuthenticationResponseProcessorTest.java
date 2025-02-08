@@ -65,6 +65,7 @@ import org.wso2.carbon.user.core.common.User;
 import org.wso2.carbon.user.core.service.RealmService;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -93,6 +94,7 @@ public class AuthenticationResponseProcessorTest {
     private static IdentityProvider localIdp;
     private static PerformableOperation redirectOperation;
     private static final String NON_EXISTING_USERID = "non-existing-user-id";
+    private static final List<String> groups = new ArrayList<>();
 
     private AuthenticationContext authContextWithNoUser;
     private AuthenticationContext authContextWithLocalUserFromFirstStep;
@@ -212,6 +214,7 @@ public class AuthenticationResponseProcessorTest {
     public Object[][] getSuccessValidResponsesForLocalUsers() {
 
         ExternallyAuthenticatedUser authUser = new ExternallyAuthenticatedUser();
+        authUser.setGroups(groups);
 
         // Valid user data with userId, userStore and userName claim.
         ActionInvocationSuccessResponse authSuccessResponseWithAuthUser = TestActionInvocationResponseBuilder
@@ -237,6 +240,11 @@ public class AuthenticationResponseProcessorTest {
                         new ArrayList<>(),
                         new AuthenticatedUserData(authUserNoUserStore));
 
+        ActionInvocationSuccessResponse authSuccessResponseWithNoUser = TestActionInvocationResponseBuilder
+                .buildAuthenticationSuccessResponse(
+                        new ArrayList<>(),
+                        null);
+
         return new Object[][] {
                 {authContextWithNoUser, authSuccessResponseWithAuthUser, AuthenticationType.IDENTIFICATION},
                 {authContextWithNoUser, authSuccessResponseWithAuthUser, AuthenticationType.VERIFICATION},
@@ -244,6 +252,7 @@ public class AuthenticationResponseProcessorTest {
                 {authContextWithNoUser, authSuccessResponseWithoutUserName, AuthenticationType.VERIFICATION},
                 {authContextWithNoUser, authSuccessResponseWithoutUserStore, AuthenticationType.IDENTIFICATION},
                 {authContextWithNoUser, authSuccessResponseWithoutUserStore, AuthenticationType.VERIFICATION},
+                {authContextWithNoUser, authSuccessResponseWithNoUser, AuthenticationType.VERIFICATION},
 
                 {authContextWithLocalUserFromFirstStep, authSuccessResponseWithAuthUser,
                         AuthenticationType.IDENTIFICATION},
@@ -257,6 +266,7 @@ public class AuthenticationResponseProcessorTest {
                         AuthenticationType.IDENTIFICATION},
                 {authContextWithLocalUserFromFirstStep, authSuccessResponseWithoutUserStore,
                         AuthenticationType.VERIFICATION},
+                {authContextWithLocalUserFromFirstStep, authSuccessResponseWithNoUser, AuthenticationType.VERIFICATION},
 
                 {authContextWithFedUserFromFirstStep, authSuccessResponseWithAuthUser,
                         AuthenticationType.IDENTIFICATION},
@@ -269,7 +279,8 @@ public class AuthenticationResponseProcessorTest {
                 {authContextWithFedUserFromFirstStep, authSuccessResponseWithoutUserStore,
                         AuthenticationType.IDENTIFICATION},
                 {authContextWithFedUserFromFirstStep, authSuccessResponseWithoutUserStore,
-                        AuthenticationType.VERIFICATION}
+                        AuthenticationType.VERIFICATION},
+                {authContextWithFedUserFromFirstStep, authSuccessResponseWithNoUser, AuthenticationType.VERIFICATION},
         };
     }
 
@@ -278,8 +289,10 @@ public class AuthenticationResponseProcessorTest {
             ActionInvocationSuccessResponse actionInvocationSuccessResponse, AuthenticationType authType)
             throws Exception {
 
-        mockUserStoreManager(
-                ((AuthenticatedUserData) actionInvocationSuccessResponse.getData()).getUser().getUserStore());
+        if (actionInvocationSuccessResponse.getData() != null) {
+            mockUserStoreManager(
+                    ((AuthenticatedUserData) actionInvocationSuccessResponse.getData()).getUser().getUserStore());
+        }
         Map<String, Object> eventContext = new TestEventContextBuilder().buildEventContext(
                 request, response, context, authType);
         when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenReturn(
@@ -327,6 +340,13 @@ public class AuthenticationResponseProcessorTest {
         String errorMessageForMissingMissMatchUserName = "The provided username for the user in the " +
                 "authentication response does not match the resolved username from the userStore.";
 
+        ActionInvocationSuccessResponse authSuccessResponseWithNoUser = TestActionInvocationResponseBuilder
+                .buildAuthenticationSuccessResponse(
+                        new ArrayList<>(),
+                        null);
+        String errorMessageForNoUserDate = "The user field is missing in the authentication action " +
+                "response. This field is required for IDENTIFICATION authentication.";
+
         return new Object[][] {
                 {authContextWithNoUser, authSuccessResponseWithoutUserId,
                         AuthenticationType.IDENTIFICATION, errorMessageForMissingUserId},
@@ -340,6 +360,8 @@ public class AuthenticationResponseProcessorTest {
                         AuthenticationType.IDENTIFICATION, errorMessageForNonExistingUserId},
                 {authContextWithNoUser, authSuccessResponseWithNonExistingUserId,
                         AuthenticationType.VERIFICATION, errorMessageForNonExistingUserId},
+                {authContextWithNoUser, authSuccessResponseWithNoUser,
+                        AuthenticationType.IDENTIFICATION, errorMessageForNoUserDate},
 
                 {authContextWithLocalUserFromFirstStep, authSuccessResponseWithoutUserId,
                         AuthenticationType.IDENTIFICATION, errorMessageForMissingUserId},
@@ -353,6 +375,8 @@ public class AuthenticationResponseProcessorTest {
                         AuthenticationType.IDENTIFICATION, errorMessageForNonExistingUserId},
                 {authContextWithLocalUserFromFirstStep, authSuccessResponseWithNonExistingUserId,
                         AuthenticationType.VERIFICATION, errorMessageForNonExistingUserId},
+                {authContextWithLocalUserFromFirstStep, authSuccessResponseWithNoUser,
+                        AuthenticationType.IDENTIFICATION, errorMessageForNoUserDate},
 
                 {authContextWithFedUserFromFirstStep, authSuccessResponseWithoutUserId,
                         AuthenticationType.IDENTIFICATION, errorMessageForMissingUserId},
@@ -365,7 +389,9 @@ public class AuthenticationResponseProcessorTest {
                 {authContextWithFedUserFromFirstStep, authSuccessResponseWithNonExistingUserId,
                         AuthenticationType.IDENTIFICATION, errorMessageForNonExistingUserId},
                 {authContextWithFedUserFromFirstStep, authSuccessResponseWithNonExistingUserId,
-                        AuthenticationType.VERIFICATION, errorMessageForNonExistingUserId}
+                        AuthenticationType.VERIFICATION, errorMessageForNonExistingUserId},
+                {authContextWithFedUserFromFirstStep, authSuccessResponseWithNoUser,
+                        AuthenticationType.IDENTIFICATION, errorMessageForNoUserDate}
         };
     }
 
@@ -375,8 +401,10 @@ public class AuthenticationResponseProcessorTest {
             String errorMessage)
             throws Exception {
 
-        mockUserStoreManager(
-                ((AuthenticatedUserData) actionInvocationSuccessResponse.getData()).getUser().getUserStore());
+        if (actionInvocationSuccessResponse.getData() != null) {
+            mockUserStoreManager(
+                    ((AuthenticatedUserData) actionInvocationSuccessResponse.getData()).getUser().getUserStore());
+        }
         Map<String, Object> eventContext = new TestEventContextBuilder().buildEventContext(
                 request, response, context, authType);
         when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenReturn(
@@ -398,6 +426,7 @@ public class AuthenticationResponseProcessorTest {
     public Object[][] getSuccessValidResponsesForFederatedUsers() {
 
         ExternallyAuthenticatedUser authUser = new ExternallyAuthenticatedUser();
+        authUser.setGroups(groups);
 
         // Valid user data with userId, userStore and userName claim.
         ActionInvocationSuccessResponse authSuccessResponseWithAuthUser = TestActionInvocationResponseBuilder
@@ -409,6 +438,7 @@ public class AuthenticationResponseProcessorTest {
         ExternallyAuthenticatedUser authUserNoUserStore =
                 new ExternallyAuthenticatedUser();
         authUserNoUserStore.setUserStore(null);
+        authUserNoUserStore.setGroups(groups);
         ActionInvocationSuccessResponse authSuccessResponseWithoutUserStore = TestActionInvocationResponseBuilder
                 .buildAuthenticationSuccessResponse(
                         new ArrayList<>(),
@@ -569,24 +599,38 @@ public class AuthenticationResponseProcessorTest {
 
     private void createExpectedAuthenticatedUsers() {
 
+        groups.add("group-1");
+        groups.add("group-2");
+
         userFromUserStore = new User();
         userFromUserStore.setTenantDomain(SUPER_TENANT_DOMAIN_NAME);
         userFromUserStore.setUserStoreDomain(AuthenticatingUserConstants.USER_STORE_NAME);
         userFromUserStore.setUsername(AuthenticatingUserConstants.USERNAME);
         userFromUserStore.setUserID(AuthenticatingUserConstants.USERID);
 
+        Map<ClaimMapping, String> claimsForLocalUser = new HashMap<>();
+        claimsForLocalUser.put(ClaimMapping.build("claim-1", "claim-1", null, false),
+                "value-1");
         expectedLocalAuthenticatedUser = new AuthenticatedUser();
         expectedLocalAuthenticatedUser.setUserId(AuthenticatingUserConstants.USERID);
         expectedLocalAuthenticatedUser.setUserStoreDomain(AuthenticatingUserConstants.USER_STORE_NAME);
         expectedLocalAuthenticatedUser.setUserName(AuthenticatingUserConstants.USERNAME);
         expectedLocalAuthenticatedUser.setTenantDomain(SUPER_TENANT_DOMAIN_NAME);
+        expectedLocalAuthenticatedUser.setUserAttributes(claimsForLocalUser);
 
+        Map<ClaimMapping, String> claimsForFedUser = new HashMap<>();
+        claimsForFedUser.put(ClaimMapping.build("claim-1", "claim-1", "value-1", false),
+                "value-1");
+        claimsForFedUser.put(ClaimMapping.build(AuthenticatorAdapterConstants.GROUP_CLAIM,
+                        AuthenticatorAdapterConstants.GROUP_CLAIM, null, false),
+                String.join(",", groups));
         expectedFedAuthenticatedUser = new AuthenticatedUser();
         expectedFedAuthenticatedUser.setUserId(AuthenticatingUserConstants.USERID);
         expectedFedAuthenticatedUser.setUserStoreDomain(AuthenticatingUserConstants.USER_STORE_NAME);
         expectedFedAuthenticatedUser.setUserName(AuthenticatingUserConstants.USERNAME);
         expectedFedAuthenticatedUser.setFederatedUser(true);
         expectedFedAuthenticatedUser.setTenantDomain(SUPER_TENANT_DOMAIN_NAME);
+        expectedFedAuthenticatedUser.setUserAttributes(claimsForFedUser);
 
         mockStatic(AuthenticatedUser.class);
         when(AuthenticatedUser.createLocalAuthenticatedUserFromSubjectIdentifier(anyString()))
