@@ -18,11 +18,6 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.model;
 
-import org.apache.commons.lang.StringUtils;
-import org.wso2.carbon.identity.action.execution.ActionExecutionLogConstants;
-import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
-import org.wso2.carbon.utils.DiagnosticLog;
-
 /**
  * This class represents the result of the execution of an authentication action response.
  * It includes the field path of the item executed in the authentication action response, along with its availability,
@@ -69,48 +64,6 @@ public class AuthenticationActionExecutionResult {
     public String getFieldName() {
 
         return fieldName;
-    }
-
-    public static void logSuccessResponseDataValidationError(
-            AuthenticationActionExecutionResult executionResult) {
-
-        logResponseExecutionResult(executionResult, DiagnosticLog.ResultStatus.FAILED,
-                String.format("An error occurred while handling the authentication action " +
-                        "response for the %s field.", executionResult.getFieldName()));
-    }
-
-    public static void logSuccessResponseWithDefaultsForMissingData(
-            AuthenticationActionExecutionResult executionResult) {
-
-        logResponseExecutionResult(executionResult, DiagnosticLog.ResultStatus.SUCCESS,
-                String.format("Since the %s field is missing from the authentication action " +
-                        "response, the default value is used.", executionResult.getFieldName()));
-    }
-
-    public static void logIncompleteResponseExecutionResult(
-            AuthenticationActionExecutionResult executionResult) {
-
-        logResponseExecutionResult(executionResult, DiagnosticLog.ResultStatus.FAILED,
-                "The authentication action response processing failed due to an invalid response " +
-                        "for the INCOMPLETE status.");
-    }
-
-    private static void logResponseExecutionResult(AuthenticationActionExecutionResult executionResult,
-                                                   DiagnosticLog.ResultStatus resultStatus, String message) {
-
-        if (LoggerUtils.isDiagnosticLogsEnabled()) {
-
-            DiagnosticLog.DiagnosticLogBuilder diagLogBuilder = new DiagnosticLog.DiagnosticLogBuilder(
-                    ActionExecutionLogConstants.ACTION_EXECUTION_COMPONENT_ID,
-                    ActionExecutionLogConstants.ActionIDs.PROCESS_ACTION_RESPONSE);
-            diagLogBuilder
-                    .inputParam(StringUtils.EMPTY, executionResult)
-                    .resultMessage(message)
-                    .logDetailLevel(DiagnosticLog.LogDetailLevel.APPLICATION)
-                    .resultStatus(resultStatus)
-                    .build();
-            LoggerUtils.triggerDiagnosticLogEvent(diagLogBuilder);
-        }
     }
 
     /**
