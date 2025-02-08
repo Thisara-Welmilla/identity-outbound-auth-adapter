@@ -84,13 +84,12 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
                         " authentication action response. This field is required for IDENTIFICATION " +
                         "authentication.");
             }
-            context.setSubject(context.getLastAuthenticatedUser());
+        } else {
+            AuthenticatedUserData authenticatedUserData = (AuthenticatedUserData) actionInvocationSuccessResponse.getData();
+            AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(authenticatedUserData, context)
+                    .buildAuthenticateduser();
+            context.setSubject(authenticatedUser);
         }
-        AuthenticatedUserData authenticatedUserData = (AuthenticatedUserData) actionInvocationSuccessResponse.getData();
-        AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(authenticatedUserData, context)
-                .buildAuthenticateduser();
-        context.setSubject(authenticatedUser);
-
         return new SuccessStatus.Builder().setResponseContext(eventContext).build();
     }
 
