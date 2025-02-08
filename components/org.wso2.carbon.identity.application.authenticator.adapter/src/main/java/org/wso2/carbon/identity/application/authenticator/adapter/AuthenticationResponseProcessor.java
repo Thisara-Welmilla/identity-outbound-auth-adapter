@@ -89,12 +89,13 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
                         Availability.UNAVAILABLE, Validity.INVALID, errorMessage));
                 throw new ActionExecutionResponseProcessorException(errorMessage);
             }
-            context.setSubject(context.getLastAuthenticatedUser());
+        } else {
+            AuthenticatedUserData authenticatedUserData =
+                    (AuthenticatedUserData) actionInvocationSuccessResponse.getData();
+            AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(authenticatedUserData, context)
+                    .buildAuthenticateduser();
+            context.setSubject(authenticatedUser);
         }
-        AuthenticatedUserData authenticatedUserData = (AuthenticatedUserData) actionInvocationSuccessResponse.getData();
-        AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(authenticatedUserData, context)
-                .buildAuthenticateduser();
-        context.setSubject(authenticatedUser);
 
         return new SuccessStatus.Builder().setResponseContext(eventContext).build();
     }

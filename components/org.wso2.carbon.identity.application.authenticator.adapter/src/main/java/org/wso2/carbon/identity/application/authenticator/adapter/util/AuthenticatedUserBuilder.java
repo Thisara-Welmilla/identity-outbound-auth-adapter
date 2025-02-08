@@ -43,6 +43,7 @@ import java.util.Map;
 
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.LOCAL;
 import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.EXTERNAL_ID_CLAIM;
+import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.GROUP_CLAIM;
 import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.USERNAME_CLAIM;
 import static org.wso2.carbon.user.core.UserCoreConstants.DOMAIN_SEPARATOR;
 
@@ -88,6 +89,7 @@ public class AuthenticatedUserBuilder {
         Map<ClaimMapping, String> attributeMap = resolveUserNameAndClaimsFromResponse();
         // Set the user ID to the external ID claim for federated authenticators.
         attributeMap.put(buildClaimMapping(EXTERNAL_ID_CLAIM), userId);
+        resolveGroupsForFederatedUser(attributeMap);
         authenticatedUser.setUserAttributes(attributeMap);
         setUsernameForFederatedUser();
         authenticatedUser.setTenantDomain(context.getTenantDomain());
@@ -174,12 +176,22 @@ public class AuthenticatedUserBuilder {
 
         Map<ClaimMapping, String> userAttributes = new HashMap<>();
         for (AuthenticatedUserData.Claim claim : userFromResponse.getUser().getClaims()) {
+            if (GROUP_CLAIM.equals(claim.getUri())) {
+                continue;
+            }
             userAttributes.put(buildClaimMapping(claim.getUri()), claim.getValue());
             if (USERNAME_CLAIM.equals(claim.getUri())) {
                 usernameFromResponse = claim.getValue();
             }
         }
         return userAttributes;
+    }
+
+    private void resolveGroupsForFederatedUser(Map<ClaimMapping, String> claimMappings) {
+
+        if (userFromResponse.getUser().getGroups() != null) {
+            claimMappings.put(buildClaimMapping(GROUP_CLAIM), String.join(",", userFromResponse.getUser().getGroups()));
+        }
     }
 
     private void setUsernameForFederatedUser() {
