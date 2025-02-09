@@ -45,6 +45,7 @@ import org.wso2.carbon.identity.application.authentication.framework.context.Aut
 import org.wso2.carbon.identity.application.authentication.framework.exception.UserIdNotFoundException;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
+import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
@@ -113,6 +114,7 @@ public class AuthenticationResponseProcessorTest {
     private UserStoreManager mockedUserStoreManager;
     private AuthenticationResponseProcessor authenticationResponseProcessor;
     private MockedStatic<LoggerUtils> loggerUtils;
+    private MockedStatic<FrameworkUtils> frameworkUtils;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -242,8 +244,7 @@ public class AuthenticationResponseProcessorTest {
 
         ActionInvocationSuccessResponse authSuccessResponseWithNoUser = TestActionInvocationResponseBuilder
                 .buildAuthenticationSuccessResponse(
-                        new ArrayList<>(),
-                        null);
+                        new ArrayList<>(), null);
 
         return new Object[][] {
                 {authContextWithNoUser, authSuccessResponseWithAuthUser, AuthenticationType.IDENTIFICATION},
@@ -342,8 +343,7 @@ public class AuthenticationResponseProcessorTest {
 
         ActionInvocationSuccessResponse authSuccessResponseWithNoUser = TestActionInvocationResponseBuilder
                 .buildAuthenticationSuccessResponse(
-                        new ArrayList<>(),
-                        null);
+                        new ArrayList<>(), null);
         String errorMessageForNoUserDate = "The user field is missing in the authentication action " +
                 "response. This field is required for IDENTIFICATION authentication.";
 
@@ -595,6 +595,9 @@ public class AuthenticationResponseProcessorTest {
 
         loggerUtils = mockStatic(LoggerUtils.class);
         loggerUtils.when(LoggerUtils::isDiagnosticLogsEnabled).thenReturn(true);
+
+        frameworkUtils = mockStatic(FrameworkUtils.class);
+        frameworkUtils.when(FrameworkUtils::getMultiAttributeSeparator).thenReturn(",");
     }
 
     private void createExpectedAuthenticatedUsers() {

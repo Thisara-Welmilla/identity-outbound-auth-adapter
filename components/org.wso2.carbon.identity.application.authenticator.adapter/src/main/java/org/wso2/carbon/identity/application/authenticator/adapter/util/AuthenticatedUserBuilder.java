@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionResponseProcessorException;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
+import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult;
@@ -116,6 +117,8 @@ public class AuthenticatedUserBuilder {
         attributeMap.put(buildClaimMapping(USERNAME_CLAIM), localUserFromUserStore.getUsername());
         authenticatedUser.setUserAttributes(attributeMap);
         authenticatedUser.setTenantDomain(context.getTenantDomain());
+
+        handleGroupsForLocalUser();
         return authenticatedUser;
     }
 
@@ -177,6 +180,11 @@ public class AuthenticatedUserBuilder {
         Map<ClaimMapping, String> userAttributes = new HashMap<>();
         for (AuthenticatedUserData.Claim claim : userFromResponse.getUser().getClaims()) {
             if (GROUP_CLAIM.equals(claim.getUri())) {
+                String message = "The groups provided as claims in the authentication response are ignored. " +
+                        "They must be defined in the data/user/groups path.";
+                DiagnosticLogger.logSuccessResponseWithIgnoredData(new AuthenticationActionExecutionResult(
+                        "claims/" + GROUP_CLAIM, Availability.UNAVAILABLE, Validity.IGNORED,
+                        message), StringUtils.lowerCase(userType.toString()));
                 continue;
             }
             userAttributes.put(buildClaimMapping(claim.getUri()), claim.getValue());
@@ -190,7 +198,18 @@ public class AuthenticatedUserBuilder {
     private void resolveGroupsForFederatedUser(Map<ClaimMapping, String> claimMappings) {
 
         if (userFromResponse.getUser().getGroups() != null) {
-            claimMappings.put(buildClaimMapping(GROUP_CLAIM), String.join(",", userFromResponse.getUser().getGroups()));
+            claimMappings.put(buildClaimMapping(GROUP_CLAIM), String.join(
+                    FrameworkUtils.getMultiAttributeSeparator(), userFromResponse.getUser().getGroups()));
+        }
+    }
+
+    private void handleGroupsForLocalUser() {
+
+        if (userFromResponse.getUser().getGroups() != null) {
+            String errorMessage = "The groups provided in the authentication response are ignored, as they can only " +
+                    "be configured for federated users.";
+            DiagnosticLogger.logSuccessResponseWithIgnoredData(new AuthenticationActionExecutionResult(
+                    "groups", Availability.UNAVAILABLE, Validity.IGNORED, errorMessage), "local");
         }
     }
 
