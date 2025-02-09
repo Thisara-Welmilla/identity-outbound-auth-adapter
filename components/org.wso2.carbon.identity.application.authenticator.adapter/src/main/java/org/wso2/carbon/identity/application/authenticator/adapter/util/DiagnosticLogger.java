@@ -56,6 +56,20 @@ public class DiagnosticLogger {
     }
 
     /**
+     * Logs the diagnostic log for the ignored data in the authentication action response with SUCCESS status.
+     *
+     * @param executionResult The authentication action response execution result.
+     * @param userType        The user type.
+     */
+    public static void logSuccessResponseWithIgnoredData(
+            AuthenticationActionExecutionResult executionResult, String userType) {
+
+        logResponseExecutionResult(executionResult, DiagnosticLog.ResultStatus.SUCCESS,
+                String.format("The %s field in the authentication action response is not applicable for %s user. " +
+                        "Hence, this field will be ignored.", executionResult.getFieldName(), userType));
+    }
+
+    /**
      * Logs the diagnostic log for the authentication action response executing with INCOMPLETE status.
      *
      * @param executionResult The authentication action response execution result.

@@ -27,6 +27,7 @@ public class AuthenticatorAdapterConstants {
     public static final String WSO2_CLAIM_DIALECT = "http://wso2.org/claims";
     public static final String EXTERNAL_ID_CLAIM = "http://wso2.org/claims/externalID";
     public static final String USERNAME_CLAIM = "http://wso2.org/claims/username";
+    public static final String GROUP_CLAIM = "http://wso2.org/claims/groups";
     public static final String AUTH_REQUEST = "authenticationRequest";
     public static final String AUTH_RESPONSE = "authenticationResponse";
     public static final String AUTH_CONTEXT = "authContext";

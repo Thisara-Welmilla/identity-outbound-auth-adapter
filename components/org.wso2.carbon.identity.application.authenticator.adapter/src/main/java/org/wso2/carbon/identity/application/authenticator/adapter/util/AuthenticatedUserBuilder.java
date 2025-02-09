@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionResponseProcessorException;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
+import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
 import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult;
@@ -39,10 +40,12 @@ import org.wso2.carbon.user.core.common.User;
 import org.wso2.carbon.user.core.service.RealmService;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.LOCAL;
 import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.EXTERNAL_ID_CLAIM;
+import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.GROUP_CLAIM;
 import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.USERNAME_CLAIM;
 import static org.wso2.carbon.user.core.UserCoreConstants.DOMAIN_SEPARATOR;
 
@@ -88,6 +91,7 @@ public class AuthenticatedUserBuilder {
         Map<ClaimMapping, String> attributeMap = resolveUserNameAndClaimsFromResponse();
         // Set the user ID to the external ID claim for federated authenticators.
         attributeMap.put(buildClaimMapping(EXTERNAL_ID_CLAIM), userId);
+        resolveGroupsForFederatedUser(attributeMap);
         authenticatedUser.setUserAttributes(attributeMap);
         setUsernameForFederatedUser();
         authenticatedUser.setTenantDomain(context.getTenantDomain());
@@ -114,6 +118,8 @@ public class AuthenticatedUserBuilder {
         attributeMap.put(buildClaimMapping(USERNAME_CLAIM), localUserFromUserStore.getUsername());
         authenticatedUser.setUserAttributes(attributeMap);
         authenticatedUser.setTenantDomain(context.getTenantDomain());
+
+        ignoreGroupsForLocalUsersIfInResponse();
         return authenticatedUser;
     }
 
@@ -174,12 +180,53 @@ public class AuthenticatedUserBuilder {
 
         Map<ClaimMapping, String> userAttributes = new HashMap<>();
         for (AuthenticatedUserData.Claim claim : userFromResponse.getUser().getClaims()) {
+            if (GROUP_CLAIM.equals(claim.getUri())) {
+                ignoreGroupsInClaimsInResponse();
+                continue;
+            }
             userAttributes.put(buildClaimMapping(claim.getUri()), claim.getValue());
             if (USERNAME_CLAIM.equals(claim.getUri())) {
                 usernameFromResponse = claim.getValue();
             }
         }
         return userAttributes;
+    }
+
+    private void resolveGroupsForFederatedUser(Map<ClaimMapping, String> claimMappings)
+            throws ActionExecutionResponseProcessorException {
+
+        List<String> groupsFromResponse = userFromResponse.getUser().getGroups();
+        if (groupsFromResponse != null) {
+            if (groupsFromResponse.stream().anyMatch(
+                    groupName -> groupName.contains(FrameworkUtils.getMultiAttributeSeparator()))) {
+                String errorMessage = String.format("The character %s is not allowed in names of groups, as it is " +
+                        "used internally to separate multiple groups.", FrameworkUtils.getMultiAttributeSeparator());
+                DiagnosticLogger.logSuccessResponseDataValidationError(new AuthenticationActionExecutionResult(
+                        "groups", Availability.AVAILABLE, Validity.INVALID, errorMessage));
+                throw new ActionExecutionResponseProcessorException(errorMessage);
+            }
+            claimMappings.put(buildClaimMapping(GROUP_CLAIM), String.join(
+                    FrameworkUtils.getMultiAttributeSeparator(), groupsFromResponse));
+        }
+    }
+
+    private void ignoreGroupsForLocalUsersIfInResponse() {
+
+        if (userFromResponse.getUser().getGroups() != null) {
+            String message = "The groups provided in the authentication response are ignored, as they can only " +
+                    "be configured for federated users.";
+            DiagnosticLogger.logSuccessResponseWithIgnoredData(new AuthenticationActionExecutionResult(
+                    "groups", Availability.AVAILABLE, Validity.IGNORED, message), "local");
+        }
+    }
+
+    private void ignoreGroupsInClaimsInResponse() {
+
+        String message = "The groups provided as claims in the authentication response are ignored. " +
+                "They must be defined in the data/user/groups path.";
+        DiagnosticLogger.logSuccessResponseWithIgnoredData(new AuthenticationActionExecutionResult(
+                "claims/" + GROUP_CLAIM, Availability.AVAILABLE, Validity.IGNORED, message),
+                StringUtils.lowerCase(userType.toString()));
     }
 
     private void setUsernameForFederatedUser() {

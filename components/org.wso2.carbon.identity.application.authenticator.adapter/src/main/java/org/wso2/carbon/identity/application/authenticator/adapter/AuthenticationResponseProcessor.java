@@ -81,17 +81,22 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
                 AuthenticatorAdapterConstants.AUTH_CONTEXT);
         AuthenticatorPropertyConstants.AuthenticationType authType = (AuthenticatorPropertyConstants.AuthenticationType)
                 eventContext.get(AuthenticatorAdapterConstants.AUTH_TYPE);
-        if (actionInvocationSuccessResponse.getData() == null) {
-            if (AuthenticatorPropertyConstants.AuthenticationType.IDENTIFICATION.equals(authType)) {
-                String errorMessage = "The user field is missing in the authentication action response. This field " +
-                        "is required for IDENTIFICATION authentication.";
-                DiagnosticLogger.logSuccessResponseDataValidationError(new AuthenticationActionExecutionResult("",
-                        Availability.UNAVAILABLE, Validity.INVALID, errorMessage));
-                throw new ActionExecutionResponseProcessorException(errorMessage);
-            }
-            context.setSubject(context.getLastAuthenticatedUser());
+
+        if (AuthenticatorPropertyConstants.AuthenticationType.VERIFICATION.equals(authType)) {
+            return new SuccessStatus.Builder().setResponseContext(eventContext).build();
         }
-        AuthenticatedUserData authenticatedUserData = (AuthenticatedUserData) actionInvocationSuccessResponse.getData();
+
+        /* The authentication type is set by the authenticator adapter, and for IDENTIFICATION authentication type,
+         providing user data in the action authentication is mandatory.*/
+        if (actionInvocationSuccessResponse.getData() == null) {
+            String errorMessage = "The user field is missing in the authentication action response. This field " +
+                    "is required for IDENTIFICATION authentication.";
+            DiagnosticLogger.logSuccessResponseDataValidationError(new AuthenticationActionExecutionResult("",
+                    Availability.UNAVAILABLE, Validity.INVALID, errorMessage));
+            throw new ActionExecutionResponseProcessorException(errorMessage);
+        }
+        AuthenticatedUserData authenticatedUserData =
+                (AuthenticatedUserData) actionInvocationSuccessResponse.getData();
         AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(authenticatedUserData, context)
                 .buildAuthenticateduser();
         context.setSubject(authenticatedUser);

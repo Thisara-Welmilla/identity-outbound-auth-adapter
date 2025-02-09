@@ -70,7 +70,7 @@ public class AuthenticationActionExecutionResult {
      * Enum to represent the validity of the field value in the authentication action response.
      */
     public enum Validity {
-        VALID, INVALID
+        VALID, INVALID, IGNORED
     }
 
     /**
