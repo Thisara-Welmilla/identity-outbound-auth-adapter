@@ -81,10 +81,14 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
                 AuthenticatorAdapterConstants.AUTH_CONTEXT);
         AuthenticatorPropertyConstants.AuthenticationType authType = (AuthenticatorPropertyConstants.AuthenticationType)
                 eventContext.get(AuthenticatorAdapterConstants.AUTH_TYPE);
+
+        if (AuthenticatorPropertyConstants.AuthenticationType.VERIFICATION.equals(authType)) {
+            return new SuccessStatus.Builder().setResponseContext(eventContext).build();
+        }
+
+        /* The authentication type is set by the authenticator adapter, and for IDENTIFICATION authentication type,
+         providing user data in the action authentication is mandatory.*/
         if (actionInvocationSuccessResponse.getData() == null) {
-            if (AuthenticatorPropertyConstants.AuthenticationType.VERIFICATION.equals(authType)) {
-                return new SuccessStatus.Builder().setResponseContext(eventContext).build();
-            }
             String errorMessage = "The user field is missing in the authentication action response. This field " +
                     "is required for IDENTIFICATION authentication.";
             DiagnosticLogger.logSuccessResponseDataValidationError(new AuthenticationActionExecutionResult("",

@@ -349,56 +349,37 @@ public class AuthenticationResponseProcessorTest {
 
         return new Object[][] {
                 {authContextWithNoUser, authSuccessResponseWithoutUserId,
-                        AuthenticationType.IDENTIFICATION, errorMessageForMissingUserId},
-                {authContextWithNoUser, authSuccessResponseWithoutUserId,
-                        AuthenticationType.VERIFICATION, errorMessageForMissingUserId},
+                        errorMessageForMissingUserId},
                 {authContextWithNoUser, authSuccessResponseWithMissMatchUserName,
-                        AuthenticationType.IDENTIFICATION, errorMessageForMissingMissMatchUserName},
-                {authContextWithNoUser, authSuccessResponseWithMissMatchUserName,
-                        AuthenticationType.VERIFICATION, errorMessageForMissingMissMatchUserName},
+                        errorMessageForMissingMissMatchUserName},
                 {authContextWithNoUser, authSuccessResponseWithNonExistingUserId,
-                        AuthenticationType.IDENTIFICATION, errorMessageForNonExistingUserId},
-                {authContextWithNoUser, authSuccessResponseWithNonExistingUserId,
-                        AuthenticationType.VERIFICATION, errorMessageForNonExistingUserId},
+                        errorMessageForNonExistingUserId},
                 {authContextWithNoUser, authSuccessResponseWithNoUser,
-                        AuthenticationType.IDENTIFICATION, errorMessageForNoUserDate},
+                        errorMessageForNoUserDate},
 
                 {authContextWithLocalUserFromFirstStep, authSuccessResponseWithoutUserId,
-                        AuthenticationType.IDENTIFICATION, errorMessageForMissingUserId},
-                {authContextWithLocalUserFromFirstStep, authSuccessResponseWithoutUserId,
-                        AuthenticationType.VERIFICATION, errorMessageForMissingUserId},
+                        errorMessageForMissingUserId},
                 {authContextWithLocalUserFromFirstStep, authSuccessResponseWithMissMatchUserName,
-                        AuthenticationType.IDENTIFICATION, errorMessageForMissingMissMatchUserName},
-                {authContextWithLocalUserFromFirstStep, authSuccessResponseWithMissMatchUserName,
-                        AuthenticationType.VERIFICATION, errorMessageForMissingMissMatchUserName},
+                        errorMessageForMissingMissMatchUserName},
                 {authContextWithLocalUserFromFirstStep, authSuccessResponseWithNonExistingUserId,
-                        AuthenticationType.IDENTIFICATION, errorMessageForNonExistingUserId},
-                {authContextWithLocalUserFromFirstStep, authSuccessResponseWithNonExistingUserId,
-                        AuthenticationType.VERIFICATION, errorMessageForNonExistingUserId},
+                        errorMessageForNonExistingUserId},
                 {authContextWithLocalUserFromFirstStep, authSuccessResponseWithNoUser,
-                        AuthenticationType.IDENTIFICATION, errorMessageForNoUserDate},
+                        errorMessageForNoUserDate},
 
                 {authContextWithFedUserFromFirstStep, authSuccessResponseWithoutUserId,
-                        AuthenticationType.IDENTIFICATION, errorMessageForMissingUserId},
-                {authContextWithFedUserFromFirstStep, authSuccessResponseWithoutUserId,
-                        AuthenticationType.VERIFICATION, errorMessageForMissingUserId},
+                        errorMessageForMissingUserId},
                 {authContextWithFedUserFromFirstStep, authSuccessResponseWithMissMatchUserName,
-                        AuthenticationType.IDENTIFICATION, errorMessageForMissingMissMatchUserName},
-                {authContextWithFedUserFromFirstStep, authSuccessResponseWithMissMatchUserName,
-                        AuthenticationType.VERIFICATION, errorMessageForMissingMissMatchUserName},
+                        errorMessageForMissingMissMatchUserName},
                 {authContextWithFedUserFromFirstStep, authSuccessResponseWithNonExistingUserId,
-                        AuthenticationType.IDENTIFICATION, errorMessageForNonExistingUserId},
-                {authContextWithFedUserFromFirstStep, authSuccessResponseWithNonExistingUserId,
-                        AuthenticationType.VERIFICATION, errorMessageForNonExistingUserId},
+                        errorMessageForNonExistingUserId},
                 {authContextWithFedUserFromFirstStep, authSuccessResponseWithNoUser,
-                        AuthenticationType.IDENTIFICATION, errorMessageForNoUserDate}
+                        errorMessageForNoUserDate}
         };
     }
 
     @Test(dataProvider = "getSuccessInvalidResponsesForLocalUsers")
     public void testProcessSuccessResponseWithInvalidResponsesForLocalUsers(AuthenticationContext context,
-            ActionInvocationSuccessResponse actionInvocationSuccessResponse, AuthenticationType authType,
-            String errorMessage)
+            ActionInvocationSuccessResponse actionInvocationSuccessResponse, String errorMessage)
             throws Exception {
 
         if (actionInvocationSuccessResponse.getData() != null) {
@@ -406,7 +387,7 @@ public class AuthenticationResponseProcessorTest {
                     ((AuthenticatedUserData) actionInvocationSuccessResponse.getData()).getUser().getUserStore());
         }
         Map<String, Object> eventContext = new TestEventContextBuilder().buildEventContext(
-                request, response, context, authType);
+                request, response, context, AuthenticationType.IDENTIFICATION);
         when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenReturn(
                 new SuccessStatus.Builder().setResponseContext(eventContext).build());
         context.setCurrentStep(2);
@@ -489,22 +470,29 @@ public class AuthenticationResponseProcessorTest {
                         new AuthenticatedUserData(authUserNoUserId));
         String errorMessageForMissingUserId = "The userId field is missing in the authentication action response.";
 
+        ExternallyAuthenticatedUser authUserWithInvalidGroupName = new ExternallyAuthenticatedUser();
+        authUserWithInvalidGroupName.setGroups(new ArrayList<>(List.of("group,1", "group2")));
+        ActionInvocationSuccessResponse authSuccessResponseWithInvalidGroupName = TestActionInvocationResponseBuilder
+                .buildAuthenticationSuccessResponse(
+                        new ArrayList<>(), new AuthenticatedUserData(authUserWithInvalidGroupName));
+        String errorMessageForNoInvalidGroupName = String.format("The character %s is not allowed in names of groups," +
+                " as it is used internally to separate multiple groups.", FrameworkUtils.getMultiAttributeSeparator());
+
         return new Object[][] {
                 {authContextWithLocalUserFromFirstStep, authSuccessResponseWithoutUserId,
-                        AuthenticationType.IDENTIFICATION, errorMessageForMissingUserId},
-                {authContextWithLocalUserFromFirstStep, authSuccessResponseWithoutUserId,
-                        AuthenticationType.VERIFICATION, errorMessageForMissingUserId}
+                        errorMessageForMissingUserId},
+                {authContextWithLocalUserFromFirstStep, authSuccessResponseWithInvalidGroupName,
+                        errorMessageForNoInvalidGroupName}
         };
     }
 
     @Test(dataProvider = "getSuccessInvalidResponsesForFederatedUsers")
     public void testProcessSuccessResponseWithInvalidResponsesForFederatedUsers(AuthenticationContext context,
-            ActionInvocationSuccessResponse actionInvocationSuccessResponse, AuthenticationType authType,
-            String errorMessage)
+            ActionInvocationSuccessResponse actionInvocationSuccessResponse, String errorMessage)
             throws Exception {
 
         Map<String, Object> eventContext = new TestEventContextBuilder().buildEventContext(
-                request, response, context, authType);
+                request, response, context, AuthenticationType.IDENTIFICATION);
         when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenReturn(
                 new SuccessStatus.Builder().setResponseContext(eventContext).build());
         context.setCurrentStep(2);

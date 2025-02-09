@@ -40,6 +40,7 @@ import org.wso2.carbon.user.core.common.User;
 import org.wso2.carbon.user.core.service.RealmService;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.LOCAL;
@@ -118,7 +119,7 @@ public class AuthenticatedUserBuilder {
         authenticatedUser.setUserAttributes(attributeMap);
         authenticatedUser.setTenantDomain(context.getTenantDomain());
 
-        handleGroupsForLocalUser();
+        ignoreGroupsForLocalUsersIfInResponse();
         return authenticatedUser;
     }
 
@@ -180,11 +181,7 @@ public class AuthenticatedUserBuilder {
         Map<ClaimMapping, String> userAttributes = new HashMap<>();
         for (AuthenticatedUserData.Claim claim : userFromResponse.getUser().getClaims()) {
             if (GROUP_CLAIM.equals(claim.getUri())) {
-                String message = "The groups provided as claims in the authentication response are ignored. " +
-                        "They must be defined in the data/user/groups path.";
-                DiagnosticLogger.logSuccessResponseWithIgnoredData(new AuthenticationActionExecutionResult(
-                        "claims/" + GROUP_CLAIM, Availability.UNAVAILABLE, Validity.IGNORED,
-                        message), StringUtils.lowerCase(userType.toString()));
+                ignoreGroupsInClaimsInResponse();
                 continue;
             }
             userAttributes.put(buildClaimMapping(claim.getUri()), claim.getValue());
@@ -195,22 +192,41 @@ public class AuthenticatedUserBuilder {
         return userAttributes;
     }
 
-    private void resolveGroupsForFederatedUser(Map<ClaimMapping, String> claimMappings) {
+    private void resolveGroupsForFederatedUser(Map<ClaimMapping, String> claimMappings)
+            throws ActionExecutionResponseProcessorException {
 
-        if (userFromResponse.getUser().getGroups() != null) {
+        List<String> groupsFromResponse = userFromResponse.getUser().getGroups();
+        if (groupsFromResponse != null) {
+            if (groupsFromResponse.stream().anyMatch(
+                    groupName -> groupName.contains(FrameworkUtils.getMultiAttributeSeparator()))) {
+                String errorMessage = String.format("The character %s is not allowed in names of groups, as it is " +
+                        "used internally to separate multiple groups.", FrameworkUtils.getMultiAttributeSeparator());
+                DiagnosticLogger.logSuccessResponseDataValidationError(new AuthenticationActionExecutionResult(
+                        "groups", Availability.AVAILABLE, Validity.INVALID, errorMessage));
+                throw new ActionExecutionResponseProcessorException(errorMessage);
+            }
             claimMappings.put(buildClaimMapping(GROUP_CLAIM), String.join(
-                    FrameworkUtils.getMultiAttributeSeparator(), userFromResponse.getUser().getGroups()));
+                    FrameworkUtils.getMultiAttributeSeparator(), groupsFromResponse));
         }
     }
 
-    private void handleGroupsForLocalUser() {
+    private void ignoreGroupsForLocalUsersIfInResponse() {
 
         if (userFromResponse.getUser().getGroups() != null) {
-            String errorMessage = "The groups provided in the authentication response are ignored, as they can only " +
+            String message = "The groups provided in the authentication response are ignored, as they can only " +
                     "be configured for federated users.";
             DiagnosticLogger.logSuccessResponseWithIgnoredData(new AuthenticationActionExecutionResult(
-                    "groups", Availability.UNAVAILABLE, Validity.IGNORED, errorMessage), "local");
+                    "groups", Availability.AVAILABLE, Validity.IGNORED, message), "local");
         }
+    }
+
+    private void ignoreGroupsInClaimsInResponse() {
+
+        String message = "The groups provided as claims in the authentication response are ignored. " +
+                "They must be defined in the data/user/groups path.";
+        DiagnosticLogger.logSuccessResponseWithIgnoredData(new AuthenticationActionExecutionResult(
+                "claims/" + GROUP_CLAIM, Availability.AVAILABLE, Validity.IGNORED, message),
+                StringUtils.lowerCase(userType.toString()));
     }
 
     private void setUsernameForFederatedUser() {
