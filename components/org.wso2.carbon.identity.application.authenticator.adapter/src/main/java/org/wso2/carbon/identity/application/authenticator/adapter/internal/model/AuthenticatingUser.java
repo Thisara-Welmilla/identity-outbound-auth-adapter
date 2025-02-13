@@ -33,7 +33,7 @@ import java.util.Map;
  */
 public class AuthenticatingUser extends User {
 
-    private String idp;
+    private String userIdentitySource;
     private String sub;
     private final List<UserClaim> claims = new ArrayList<>();
 
@@ -44,7 +44,8 @@ public class AuthenticatingUser extends User {
     public AuthenticatingUser(String id, AuthenticatedUser user) {
         super(id);
         sub = user.getAuthenticatedSubjectIdentifier();
-        idp = user.isFederatedUser() ? AuthenticatorAdapterConstants.FED_IDP : AuthenticatorAdapterConstants.LOCAL_IDP;
+        userIdentitySource = user.isFederatedUser() ?
+                AuthenticatorAdapterConstants.FED_IDP : AuthenticatorAdapterConstants.LOCAL_IDP;
 
         Map<ClaimMapping, String> userAttributes = user.getUserAttributes();
         if (userAttributes != null) {
@@ -60,12 +61,12 @@ public class AuthenticatingUser extends User {
         return claims;
     }
 
-    public void setIdp(String idp) {
-        this.idp = idp;
+    public void setUserIdentitySource(String userIdentitySource) {
+        this.userIdentitySource = userIdentitySource;
     }
 
-    public String getIdp() {
-        return idp;
+    public String getUserIdentitySource() {
+        return userIdentitySource;
     }
 
     public void setSub(String sub) {
