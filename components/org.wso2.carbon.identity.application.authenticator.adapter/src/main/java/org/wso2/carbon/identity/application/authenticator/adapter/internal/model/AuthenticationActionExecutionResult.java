@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.application.authenticator.adapter.model;
+package org.wso2.carbon.identity.application.authenticator.adapter.internal.model;
 
 /**
  * This class represents the result of the execution of an authentication action response.

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.application.authenticator.adapter;
+package org.wso2.carbon.identity.application.authenticator.adapter.internal;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -39,12 +39,12 @@ import org.wso2.carbon.identity.application.authentication.framework.context.Aut
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.UserIdNotFoundException;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
-import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatingUser;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationRequest;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationRequestEvent;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationRequestEvent.AuthenticatedStep;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.component.AuthenticatorAdapterDataHolder;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticatingUser;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationRequest;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationRequestEvent;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationRequestEvent.AuthenticatedStep;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.organization.management.service.exception.OrganizationManagementException;
 

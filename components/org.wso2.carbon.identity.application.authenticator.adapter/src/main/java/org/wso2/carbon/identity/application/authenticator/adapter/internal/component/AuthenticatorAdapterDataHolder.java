@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.application.authenticator.adapter.internal;
+package org.wso2.carbon.identity.application.authenticator.adapter.internal.component;
 
 import org.wso2.carbon.identity.action.execution.ActionExecutorService;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;

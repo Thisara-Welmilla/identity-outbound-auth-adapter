@@ -29,8 +29,8 @@ import org.wso2.carbon.identity.action.execution.model.Error;
 import org.wso2.carbon.identity.action.execution.model.Event;
 import org.wso2.carbon.identity.action.execution.model.Failure;
 import org.wso2.carbon.identity.action.execution.model.Success;
-import org.wso2.carbon.identity.application.authenticator.adapter.AuthenticationResponseProcessor;
-import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticationResponseProcessor;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.component.AuthenticatorAdapterDataHolder;
 
 import java.util.Map;
 

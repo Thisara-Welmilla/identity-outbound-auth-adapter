@@ -1,4 +1,4 @@
-package org.wso2.carbon.identity.application.authenticator.adapter.model;
+package org.wso2.carbon.identity.application.authenticator.adapter.internal.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
