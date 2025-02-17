@@ -16,12 +16,12 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.application.authenticator.adapter.model;
+package org.wso2.carbon.identity.application.authenticator.adapter.internal.model;
 
 import org.wso2.carbon.identity.action.execution.model.User;
 import org.wso2.carbon.identity.action.execution.model.UserClaim;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 
 import java.util.ArrayList;

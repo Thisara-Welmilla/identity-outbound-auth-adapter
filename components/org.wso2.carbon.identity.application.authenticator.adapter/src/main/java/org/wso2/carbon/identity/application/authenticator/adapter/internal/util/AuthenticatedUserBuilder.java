@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.application.authenticator.adapter.util;
+package org.wso2.carbon.identity.application.authenticator.adapter.internal.util;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -25,11 +25,12 @@ import org.wso2.carbon.identity.action.execution.exception.ActionExecutionRespon
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
-import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.Availability;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.Validity;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.component.AuthenticatorAdapterDataHolder;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticatedUserData;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationActionExecutionResult;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationActionExecutionResult.Availability;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationActionExecutionResult.Validity;
 import org.wso2.carbon.identity.application.common.model.Claim;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
@@ -44,9 +45,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.LOCAL;
-import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.EXTERNAL_ID_CLAIM;
-import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.GROUP_CLAIM;
-import static org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants.USERNAME_CLAIM;
+import static org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants.EXTERNAL_ID_CLAIM;
+import static org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants.GROUP_CLAIM;
+import static org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants.USERNAME_CLAIM;
 import static org.wso2.carbon.user.core.UserCoreConstants.DOMAIN_SEPARATOR;
 
 /**

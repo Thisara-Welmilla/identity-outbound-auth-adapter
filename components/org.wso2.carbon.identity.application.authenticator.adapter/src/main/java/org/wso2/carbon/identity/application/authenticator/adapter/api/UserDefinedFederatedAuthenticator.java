@@ -16,20 +16,21 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.application.authenticator.adapter;
+package org.wso2.carbon.identity.application.authenticator.adapter.api;
 
 import org.wso2.carbon.identity.application.authentication.framework.FederatedApplicationAuthenticator;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.AbstractAuthenticatorAdapter;
 import org.wso2.carbon.identity.application.common.model.UserDefinedFederatedAuthenticatorConfig;
 
 /**
  * This is the authenticator class to authenticate and identify user whose identity managed externally.
  */
-public class FederatedAuthenticatorAdapter extends AbstractAuthenticatorAdapter implements
+public class UserDefinedFederatedAuthenticator extends AbstractAuthenticatorAdapter implements
         FederatedApplicationAuthenticator {
 
     private static final long serialVersionUID = 2468013579246801357L;
 
-    public FederatedAuthenticatorAdapter(UserDefinedFederatedAuthenticatorConfig config) {
+    public UserDefinedFederatedAuthenticator(UserDefinedFederatedAuthenticatorConfig config) {
 
         authenticatorName = config.getName();
         friendlyName = config.getDisplayName();

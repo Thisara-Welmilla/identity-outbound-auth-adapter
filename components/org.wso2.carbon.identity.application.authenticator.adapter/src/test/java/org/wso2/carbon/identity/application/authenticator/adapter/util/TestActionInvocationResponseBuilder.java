@@ -25,7 +25,8 @@ import org.wso2.carbon.identity.action.execution.model.ActionInvocationResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationSuccessResponse;
 import org.wso2.carbon.identity.action.execution.model.PerformableOperation;
 import org.wso2.carbon.identity.action.execution.model.ResponseData;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticatedUserData;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticationAdapterConstants.AuthenticatingUserConstants;
 
 import java.util.ArrayList;

@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.application.authenticator.adapter;
+package org.wso2.carbon.identity.application.authenticator.adapter.internal;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,8 +33,8 @@ import org.wso2.carbon.identity.application.authentication.framework.exception.A
 import org.wso2.carbon.identity.application.authentication.framework.exception.InvalidCredentialsException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
-import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.component.AuthenticatorAdapterDataHolder;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants;
 

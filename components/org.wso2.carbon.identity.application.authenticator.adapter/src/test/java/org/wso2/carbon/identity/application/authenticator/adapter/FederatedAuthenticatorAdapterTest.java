@@ -30,8 +30,9 @@ import org.wso2.carbon.identity.application.authentication.framework.config.mode
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
-import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.application.authenticator.adapter.api.UserDefinedFederatedAuthenticator;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.component.AuthenticatorAdapterDataHolder;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticatedTestUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticationAdapterConstants.AuthenticatingUserConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestEventContextBuilder;
@@ -50,13 +51,13 @@ import static org.mockito.Mockito.when;
 import static org.wso2.carbon.base.MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
 
 /**
- * Unit tests for FederatedAuthenticatorAdapter.
+ * Unit tests for UserDefinedFederatedAuthenticator.
  */
 public class FederatedAuthenticatorAdapterTest {
 
-    private static final String AUTHENTICATOR_NAME = "FederatedAuthenticatorAdapter";
+    private static final String AUTHENTICATOR_NAME = "UserDefinedFederatedAuthenticator";
     private static final String FRIENDLY_NAME = "Federated Authenticator Adapter";
-    private FederatedAuthenticatorAdapter federatedAuthenticatorAdapter;
+    private UserDefinedFederatedAuthenticator userDefinedFederatedAuthenticator;
 
     private final HttpServletRequest request = mock(HttpServletRequest.class);
     private final HttpServletResponse response = mock(HttpServletResponse.class);
@@ -75,7 +76,7 @@ public class FederatedAuthenticatorAdapterTest {
         UserDefinedFederatedAuthenticatorConfig fedConfig = new UserDefinedFederatedAuthenticatorConfig();
         fedConfig.setName(AUTHENTICATOR_NAME);
         fedConfig.setDisplayName(FRIENDLY_NAME);
-        federatedAuthenticatorAdapter = new FederatedAuthenticatorAdapter(fedConfig);
+        userDefinedFederatedAuthenticator = new UserDefinedFederatedAuthenticator(fedConfig);
 
         mockedActionExecutorService = mock(ActionExecutorService.class);
         AuthenticatorAdapterDataHolder.getInstance().setActionExecutorService(mockedActionExecutorService);
@@ -93,19 +94,19 @@ public class FederatedAuthenticatorAdapterTest {
     @Test
     public void testGetFriendlyName() {
 
-        Assert.assertEquals(federatedAuthenticatorAdapter.getFriendlyName(), FRIENDLY_NAME);
+        Assert.assertEquals(userDefinedFederatedAuthenticator.getFriendlyName(), FRIENDLY_NAME);
     }
 
     @Test
     public void testGetName() {
 
-        Assert.assertEquals(federatedAuthenticatorAdapter.getName(), AUTHENTICATOR_NAME);
+        Assert.assertEquals(userDefinedFederatedAuthenticator.getName(), AUTHENTICATOR_NAME);
     }
 
     @Test
     public void testClaimDialectURI() {
 
-        Assert.assertEquals(federatedAuthenticatorAdapter.getClaimDialectURI(),
+        Assert.assertEquals(userDefinedFederatedAuthenticator.getClaimDialectURI(),
                 AuthenticatorAdapterConstants.WSO2_CLAIM_DIALECT);
     }
 
@@ -128,7 +129,7 @@ public class FederatedAuthenticatorAdapterTest {
             return new SuccessStatus.Builder().setResponseContext(new HashMap<>()).build();
         });
         context.setCurrentStep(currentStep);
-        AuthenticatorFlowStatus authStatus = federatedAuthenticatorAdapter.process(request, response, context);
+        AuthenticatorFlowStatus authStatus = userDefinedFederatedAuthenticator.process(request, response, context);
 
         Assert.assertEquals(authStatus, AuthenticatorFlowStatus.SUCCESS_COMPLETED);
     }
@@ -140,7 +141,7 @@ public class FederatedAuthenticatorAdapterTest {
         when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenReturn(
                 new IncompleteStatus.Builder().responseContext(new HashMap<>()).build());
         context.setCurrentStep(currentStep);
-        AuthenticatorFlowStatus authStatus = federatedAuthenticatorAdapter.process(request, response, context);
+        AuthenticatorFlowStatus authStatus = userDefinedFederatedAuthenticator.process(request, response, context);
 
         Assert.assertEquals(authStatus, AuthenticatorFlowStatus.INCOMPLETE);
         Assert.assertEquals(context.getCurrentAuthenticator(), AUTHENTICATOR_NAME);

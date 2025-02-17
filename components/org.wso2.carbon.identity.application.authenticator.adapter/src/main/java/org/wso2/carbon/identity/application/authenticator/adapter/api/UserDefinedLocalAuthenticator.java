@@ -16,20 +16,22 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.application.authenticator.adapter;
+package org.wso2.carbon.identity.application.authenticator.adapter.api;
 
 import org.wso2.carbon.identity.application.authentication.framework.LocalApplicationAuthenticator;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.AbstractAuthenticatorAdapter;
 import org.wso2.carbon.identity.application.common.model.UserDefinedLocalAuthenticatorConfig;
 
 /**
  * This is the authenticator class to authenticate and identify user whose identity managed by the system or user
  * verification.
  */
-public class LocalAuthenticatorAdapter extends AbstractAuthenticatorAdapter implements LocalApplicationAuthenticator {
+public class UserDefinedLocalAuthenticator extends AbstractAuthenticatorAdapter
+        implements LocalApplicationAuthenticator {
 
     private static final long serialVersionUID = 1357924680135792468L;
 
-    public LocalAuthenticatorAdapter(UserDefinedLocalAuthenticatorConfig config) {
+    public UserDefinedLocalAuthenticator(UserDefinedLocalAuthenticatorConfig config) {
 
         authenticatorName = config.getName();
         friendlyName = config.getDisplayName();

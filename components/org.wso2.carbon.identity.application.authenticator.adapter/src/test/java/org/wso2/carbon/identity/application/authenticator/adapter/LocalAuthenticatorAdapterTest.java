@@ -31,8 +31,9 @@ import org.wso2.carbon.identity.application.authentication.framework.config.mode
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
-import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticatorAdapterDataHolder;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.application.authenticator.adapter.api.UserDefinedLocalAuthenticator;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.component.AuthenticatorAdapterDataHolder;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticatedTestUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticationAdapterConstants.AuthenticatingUserConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestEventContextBuilder;
@@ -52,13 +53,13 @@ import static org.mockito.Mockito.when;
 import static org.wso2.carbon.base.MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
 
 /**
- * Unit tests for LocalAuthenticatorAdapter.
+ * Unit tests for UserDefinedLocalAuthenticator.
  */
 public class LocalAuthenticatorAdapterTest {
     
-    private static final String AUTHENTICATOR_NAME = "LocalAuthenticatorAdapter";
+    private static final String AUTHENTICATOR_NAME = "UserDefinedLocalAuthenticator";
     private static final String FRIENDLY_NAME = "Local Authenticator Adapter";
-    private LocalAuthenticatorAdapter localAuthenticatorAdapter;
+    private UserDefinedLocalAuthenticator userDefinedLocalAuthenticator;
 
     private final HttpServletRequest request = mock(HttpServletRequest.class);
     private final HttpServletResponse response = mock(HttpServletResponse.class);
@@ -79,7 +80,7 @@ public class LocalAuthenticatorAdapterTest {
                 AuthenticatorPropertyConstants.AuthenticationType.IDENTIFICATION);
         localConfig.setName(AUTHENTICATOR_NAME);
         localConfig.setDisplayName(FRIENDLY_NAME);
-        localAuthenticatorAdapter = new LocalAuthenticatorAdapter(localConfig);
+        userDefinedLocalAuthenticator = new UserDefinedLocalAuthenticator(localConfig);
 
         mockedActionExecutorService = mock(ActionExecutorService.class);
         AuthenticatorAdapterDataHolder.getInstance().setActionExecutorService(mockedActionExecutorService);
@@ -97,26 +98,26 @@ public class LocalAuthenticatorAdapterTest {
     @Test
     public void testGetFriendlyName() {
 
-        Assert.assertEquals(localAuthenticatorAdapter.getFriendlyName(), FRIENDLY_NAME);
+        Assert.assertEquals(userDefinedLocalAuthenticator.getFriendlyName(), FRIENDLY_NAME);
     }
 
     @Test
     public void testGetName() {
 
-        Assert.assertEquals(localAuthenticatorAdapter.getName(), AUTHENTICATOR_NAME);
+        Assert.assertEquals(userDefinedLocalAuthenticator.getName(), AUTHENTICATOR_NAME);
     }
 
     @Test
     public void testGetAuthenticationType() {
 
-        Assert.assertEquals(localAuthenticatorAdapter.getAuthenticationType(),
+        Assert.assertEquals(userDefinedLocalAuthenticator.getAuthenticationType(),
                 AuthenticatorPropertyConstants.AuthenticationType.IDENTIFICATION);
     }
 
     @Test
     public void testClaimDialectURI() {
 
-        Assert.assertEquals(localAuthenticatorAdapter.getClaimDialectURI(),
+        Assert.assertEquals(userDefinedLocalAuthenticator.getClaimDialectURI(),
                 AuthenticatorAdapterConstants.WSO2_CLAIM_DIALECT);
     }
 
@@ -141,7 +142,7 @@ public class LocalAuthenticatorAdapterTest {
 
         context.setCurrentStep(currentStep);
         context.getSequenceConfig().setApplicationConfig(mockedApplicationConfig);
-        AuthenticatorFlowStatus authStatus = localAuthenticatorAdapter.process(request, response, context);
+        AuthenticatorFlowStatus authStatus = userDefinedLocalAuthenticator.process(request, response, context);
 
         Assert.assertEquals(authStatus, AuthenticatorFlowStatus.SUCCESS_COMPLETED);
     }
@@ -153,7 +154,7 @@ public class LocalAuthenticatorAdapterTest {
         when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenReturn(
                 new IncompleteStatus.Builder().responseContext(new HashMap<>()).build());
         context.setCurrentStep(currentStep);
-        AuthenticatorFlowStatus authStatus = localAuthenticatorAdapter.process(request, response, context);
+        AuthenticatorFlowStatus authStatus = userDefinedLocalAuthenticator.process(request, response, context);
 
         Assert.assertEquals(authStatus, AuthenticatorFlowStatus.INCOMPLETE);
         Assert.assertEquals(authStatus, AuthenticatorFlowStatus.INCOMPLETE);

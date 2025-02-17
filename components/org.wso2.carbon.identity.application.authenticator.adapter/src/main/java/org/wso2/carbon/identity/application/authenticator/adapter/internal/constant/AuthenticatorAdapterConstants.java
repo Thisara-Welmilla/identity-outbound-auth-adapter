@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.application.authenticator.adapter.util;
+package org.wso2.carbon.identity.application.authenticator.adapter.internal.constant;
 
 /**
  * This class holds the constants related to the authentication adapter.

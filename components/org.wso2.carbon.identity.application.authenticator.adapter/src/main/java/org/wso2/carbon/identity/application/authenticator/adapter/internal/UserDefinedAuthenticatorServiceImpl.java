@@ -16,42 +16,44 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.application.authenticator.adapter;
+package org.wso2.carbon.identity.application.authenticator.adapter.internal;
 
 import org.wso2.carbon.identity.application.authentication.framework.FederatedApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authentication.framework.LocalApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authentication.framework.UserDefinedAuthenticatorService;
+import org.wso2.carbon.identity.application.authenticator.adapter.api.UserDefinedFederatedAuthenticator;
+import org.wso2.carbon.identity.application.authenticator.adapter.api.UserDefinedLocalAuthenticator;
 import org.wso2.carbon.identity.application.common.model.UserDefinedFederatedAuthenticatorConfig;
 import org.wso2.carbon.identity.application.common.model.UserDefinedLocalAuthenticatorConfig;
 
 /**
- * This is the authenticator adapter service implementation class to create ApplicationAuthenticator instance for the
- * give application authenticator configuration.
+ * This is the UserDefinedAuthenticatorService implementation class to create ApplicationAuthenticator instance
+ * for the give application authenticator configuration.
  */
-public class AuthenticationAdapterServiceImpl implements UserDefinedAuthenticatorService {
+public class UserDefinedAuthenticatorServiceImpl implements UserDefinedAuthenticatorService {
 
     /**
      * Provide new FederatedApplicationAuthenticator for given federated authenticator configuration.
      *
      * @param config    User Defined Federated Authenticator Configuration.
-     * @return  FederatedAuthenticatorAdapter instance.
+     * @return  UserDefinedFederatedAuthenticator instance.
      */
     @Override
     public FederatedApplicationAuthenticator getUserDefinedFederatedAuthenticator(
             UserDefinedFederatedAuthenticatorConfig config) {
 
-        return new FederatedAuthenticatorAdapter(config);
+        return new UserDefinedFederatedAuthenticator(config);
     }
 
     /**
      * Provide new LocalApplicationAuthenticator for given local authenticator configuration.
      *
      * @param config    User Defined Local Authenticator Configuration.
-     * @return  LocalAuthenticatorAdapter instance.
+     * @return  UserDefinedLocalAuthenticator instance.
      */
     @Override
     public LocalApplicationAuthenticator getUserDefinedLocalAuthenticator(UserDefinedLocalAuthenticatorConfig config) {
 
-        return new LocalAuthenticatorAdapter(config);
+        return new UserDefinedLocalAuthenticator(config);
     }
 }

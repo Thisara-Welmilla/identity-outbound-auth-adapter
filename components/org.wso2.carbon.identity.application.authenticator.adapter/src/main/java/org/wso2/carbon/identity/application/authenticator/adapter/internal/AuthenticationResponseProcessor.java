@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.application.authenticator.adapter;
+package org.wso2.carbon.identity.application.authenticator.adapter.internal;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.logging.Log;
@@ -43,13 +43,13 @@ import org.wso2.carbon.identity.action.execution.model.SuccessStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticatedUserData;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.Availability;
-import org.wso2.carbon.identity.application.authenticator.adapter.model.AuthenticationActionExecutionResult.Validity;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatedUserBuilder;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.AuthenticatorAdapterConstants;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.DiagnosticLogger;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticatedUserData;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationActionExecutionResult;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationActionExecutionResult.Availability;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationActionExecutionResult.Validity;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.util.AuthenticatedUserBuilder;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.util.DiagnosticLogger;
 import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants;
 
 import java.io.IOException;
