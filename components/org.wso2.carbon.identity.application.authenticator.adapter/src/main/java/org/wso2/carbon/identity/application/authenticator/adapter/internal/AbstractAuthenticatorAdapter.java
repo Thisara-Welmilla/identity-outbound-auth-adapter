@@ -26,6 +26,7 @@ import org.wso2.carbon.identity.action.execution.model.ActionType;
 import org.wso2.carbon.identity.action.execution.model.Error;
 import org.wso2.carbon.identity.action.execution.model.ErrorStatus;
 import org.wso2.carbon.identity.action.execution.model.FailedStatus;
+import org.wso2.carbon.identity.action.execution.model.FlowContext;
 import org.wso2.carbon.identity.application.authentication.framework.AbstractApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
@@ -39,7 +40,6 @@ import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -77,15 +77,15 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
                 return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
             }
 
-            Map<String, Object> eventContext = new HashMap<>();
-            eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
-            eventContext.put(AuthenticatorAdapterConstants.AUTH_RESPONSE, response);
-            eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, context);
-            eventContext.put(AuthenticatorAdapterConstants.AUTH_TYPE, getAuthenticationType());
+            FlowContext flowContext = FlowContext.create();
+            flowContext.add(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
+            flowContext.add(AuthenticatorAdapterConstants.AUTH_RESPONSE, response);
+            flowContext.add(AuthenticatorAdapterConstants.AUTH_CONTEXT, context);
+            flowContext.add(AuthenticatorAdapterConstants.AUTH_TYPE, getAuthenticationType());
 
             /* Execute the corresponding action from the authentication config and add the ActionExecutionStatus result
              to the context which will be used in processAuthenticationResponse method. */
-            ActionExecutionStatus executionStatus = executeAction(context, eventContext, context.getTenantDomain());
+            ActionExecutionStatus executionStatus = executeAction(context, flowContext, context.getTenantDomain());
             context.setProperty(AuthenticatorAdapterConstants.EXECUTION_STATUS_PROP_NAME, executionStatus);
 
             if (executionStatus.getStatus() == ActionExecutionStatus.Status.INCOMPLETE) {
@@ -107,7 +107,7 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
         }
     }
 
-    private ActionExecutionStatus executeAction(AuthenticationContext context, Map<String, Object> eventContext,
+    private ActionExecutionStatus executeAction(AuthenticationContext context, FlowContext flowContext,
                                                 String tenantDomain) throws ActionExecutionException {
 
         Map<String, String> authenticatorProperties = context.getAuthenticatorProperties();
@@ -115,11 +115,11 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
 
         ActionExecutionStatus executionStatus =
                 AuthenticatorAdapterDataHolder.getInstance().getActionExecutorService()
-                        .execute(ActionType.AUTHENTICATION, actionId, eventContext, tenantDomain);
+                        .execute(ActionType.AUTHENTICATION, actionId, flowContext, tenantDomain);
         if (LOG.isDebugEnabled()) {
             LOG.debug(String.format(
                     "Invoked authentication action for Authentication flow ID: %s. Status: %s",
-                    eventContext.get(AuthenticatorAdapterConstants.FLOW_ID),
+                    context.getContextIdentifier(),
                     Optional.ofNullable(executionStatus).isPresent() ? executionStatus.getStatus() : "NA"));
         }
         return executionStatus;

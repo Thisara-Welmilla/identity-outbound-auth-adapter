@@ -23,6 +23,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.wso2.carbon.identity.action.execution.ActionExecutorService;
+import org.wso2.carbon.identity.action.execution.model.FlowContext;
 import org.wso2.carbon.identity.action.execution.model.IncompleteStatus;
 import org.wso2.carbon.identity.action.execution.model.SuccessStatus;
 import org.wso2.carbon.identity.application.authentication.framework.AuthenticatorFlowStatus;
@@ -35,7 +36,7 @@ import org.wso2.carbon.identity.application.authenticator.adapter.internal.compo
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticatedTestUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticationAdapterConstants.AuthenticatingUserConstants;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.TestEventContextBuilder;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.TestFlowContextBuilder;
 import org.wso2.carbon.identity.application.common.model.IdentityProvider;
 import org.wso2.carbon.identity.application.common.model.UserDefinedFederatedAuthenticatorConfig;
 
@@ -81,7 +82,7 @@ public class FederatedAuthenticatorAdapterTest {
         mockedActionExecutorService = mock(ActionExecutorService.class);
         AuthenticatorAdapterDataHolder.getInstance().setActionExecutorService(mockedActionExecutorService);
 
-        authHistory = TestEventContextBuilder.buildAuthHistory();
+        authHistory = TestFlowContextBuilder.buildAuthHistory();
         buildEventContext();
 
         expectedAuthenticatedUser = new AuthenticatedUser();
@@ -124,7 +125,8 @@ public class FederatedAuthenticatorAdapterTest {
     public void testSuccessAuthenticationRequestProcess(AuthenticationContext context, int currentStep)
             throws Exception {
 
-        when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenAnswer(invocation -> {
+        when(mockedActionExecutorService.execute(any(), any(), any(FlowContext.class), any()))
+                .thenAnswer(invocation -> {
             context.setSubject(expectedAuthenticatedUser);
             return new SuccessStatus.Builder().setResponseContext(new HashMap<>()).build();
         });
@@ -138,7 +140,7 @@ public class FederatedAuthenticatorAdapterTest {
     public void testIncompleteAuthenticationRequestProcess(AuthenticationContext context, int currentStep)
             throws Exception {
 
-        when(mockedActionExecutorService.execute(any(), any(), any(), any())).thenReturn(
+        when(mockedActionExecutorService.execute(any(), any(), any(FlowContext.class), any())).thenReturn(
                 new IncompleteStatus.Builder().responseContext(new HashMap<>()).build());
         context.setCurrentStep(currentStep);
         AuthenticatorFlowStatus authStatus = userDefinedFederatedAuthenticator.process(request, response, context);
@@ -154,7 +156,7 @@ public class FederatedAuthenticatorAdapterTest {
         idp.setIdentityProviderName("testIdp");
 
         // Custom authenticator engaging in 1st step of authentication flow.
-        authContextWithNoUser = new TestEventContextBuilder().buildAuthenticationContext(
+        authContextWithNoUser = new TestFlowContextBuilder().buildAuthenticationContext(
                 null, SUPER_TENANT_DOMAIN_NAME, new ArrayList<AuthHistory>());
         authContextWithNoUser.setExternalIdP(new ExternalIdPConfig(idp));
 
@@ -162,7 +164,7 @@ public class FederatedAuthenticatorAdapterTest {
         localAuthenticatedUser = TestAuthenticatedTestUserBuilder.createAuthenticatedUser(
                 TestAuthenticatedTestUserBuilder.AuthenticatedUserConstants.LOCAL_USER_PREFIX,
                 SUPER_TENANT_DOMAIN_NAME);
-        authContextWithLocalUserFromFirstStep = new TestEventContextBuilder().buildAuthenticationContext(
+        authContextWithLocalUserFromFirstStep = new TestFlowContextBuilder().buildAuthenticationContext(
                 localAuthenticatedUser, SUPER_TENANT_DOMAIN_NAME, authHistory);
         authContextWithLocalUserFromFirstStep.setExternalIdP(new ExternalIdPConfig(idp));
 
@@ -170,7 +172,7 @@ public class FederatedAuthenticatorAdapterTest {
         federatedAuthenticatedUser = TestAuthenticatedTestUserBuilder.createAuthenticatedUser(
                 TestAuthenticatedTestUserBuilder.AuthenticatedUserConstants.LOCAL_USER_PREFIX,
                 SUPER_TENANT_DOMAIN_NAME);
-        authContextWithFedUserFromFirstStep = new TestEventContextBuilder().buildAuthenticationContext(
+        authContextWithFedUserFromFirstStep = new TestFlowContextBuilder().buildAuthenticationContext(
                 federatedAuthenticatedUser, SUPER_TENANT_DOMAIN_NAME, authHistory);
         authContextWithFedUserFromFirstStep.setExternalIdP(new ExternalIdPConfig(idp));
     }

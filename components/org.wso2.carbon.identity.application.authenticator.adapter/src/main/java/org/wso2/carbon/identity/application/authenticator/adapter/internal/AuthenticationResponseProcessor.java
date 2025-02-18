@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.action.execution.ActionExecutionResponseProcessor;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionResponseProcessorException;
+import org.wso2.carbon.identity.action.execution.model.ActionExecutionResponseContext;
 import org.wso2.carbon.identity.action.execution.model.ActionExecutionStatus;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationErrorResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationFailureResponse;
@@ -31,9 +32,9 @@ import org.wso2.carbon.identity.action.execution.model.ActionInvocationSuccessRe
 import org.wso2.carbon.identity.action.execution.model.ActionType;
 import org.wso2.carbon.identity.action.execution.model.Error;
 import org.wso2.carbon.identity.action.execution.model.ErrorStatus;
-import org.wso2.carbon.identity.action.execution.model.Event;
 import org.wso2.carbon.identity.action.execution.model.FailedStatus;
 import org.wso2.carbon.identity.action.execution.model.Failure;
+import org.wso2.carbon.identity.action.execution.model.FlowContext;
 import org.wso2.carbon.identity.action.execution.model.Incomplete;
 import org.wso2.carbon.identity.action.execution.model.IncompleteStatus;
 import org.wso2.carbon.identity.action.execution.model.Operation;
@@ -54,7 +55,6 @@ import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -73,22 +73,22 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
     }
 
     @Override
-    public ActionExecutionStatus<Success> processSuccessResponse(Map<String, Object> eventContext, Event event,
-            ActionInvocationSuccessResponse actionInvocationSuccessResponse)
+    public ActionExecutionStatus<Success> processSuccessResponse(FlowContext flowContext,
+            ActionExecutionResponseContext<ActionInvocationSuccessResponse> responseContext)
             throws ActionExecutionResponseProcessorException {
 
-        AuthenticationContext context = (AuthenticationContext) eventContext.get(
-                AuthenticatorAdapterConstants.AUTH_CONTEXT);
-        AuthenticatorPropertyConstants.AuthenticationType authType = (AuthenticatorPropertyConstants.AuthenticationType)
-                eventContext.get(AuthenticatorAdapterConstants.AUTH_TYPE);
+        AuthenticationContext context = flowContext.getValue(
+                AuthenticatorAdapterConstants.AUTH_CONTEXT, AuthenticationContext.class);
+        AuthenticatorPropertyConstants.AuthenticationType authType = flowContext.getValue(
+                AuthenticatorAdapterConstants.AUTH_TYPE, AuthenticatorPropertyConstants.AuthenticationType.class);
 
         if (AuthenticatorPropertyConstants.AuthenticationType.VERIFICATION.equals(authType)) {
-            return new SuccessStatus.Builder().setResponseContext(eventContext).build();
+            return new SuccessStatus.Builder().setResponseContext(flowContext.getContextData()).build();
         }
 
         /* The authentication type is set by the authenticator adapter, and for IDENTIFICATION authentication type,
          providing user data in the action authentication is mandatory.*/
-        if (actionInvocationSuccessResponse.getData() == null) {
+        if (responseContext.getActionInvocationResponse().getData() == null) {
             String errorMessage = "The user field is missing in the authentication action response. This field " +
                     "is required for IDENTIFICATION authentication.";
             DiagnosticLogger.logSuccessResponseDataValidationError(new AuthenticationActionExecutionResult("",
@@ -96,29 +96,29 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
             throw new ActionExecutionResponseProcessorException(errorMessage);
         }
         AuthenticatedUserData authenticatedUserData =
-                (AuthenticatedUserData) actionInvocationSuccessResponse.getData();
+                (AuthenticatedUserData) responseContext.getActionInvocationResponse().getData();
         AuthenticatedUser authenticatedUser = new AuthenticatedUserBuilder(authenticatedUserData, context)
                 .buildAuthenticateduser();
         context.setSubject(authenticatedUser);
 
-        return new SuccessStatus.Builder().setResponseContext(eventContext).build();
+        return new SuccessStatus.Builder().setResponseContext(flowContext.getContextData()).build();
     }
 
     @Override
-    public ActionExecutionStatus<Incomplete> processIncompleteResponse(Map<String, Object> eventContext, Event event,
-            ActionInvocationIncompleteResponse actionInvocationIncompleteResponse)
+    public ActionExecutionStatus<Incomplete> processIncompleteResponse(FlowContext flowContext,
+            ActionExecutionResponseContext<ActionInvocationIncompleteResponse> responseContext)
             throws ActionExecutionResponseProcessorException {
 
-        HttpServletResponse response = (HttpServletResponse) eventContext
-                .get(AuthenticatorAdapterConstants.AUTH_RESPONSE);
+        HttpServletResponse response = flowContext.getValue(AuthenticatorAdapterConstants.AUTH_RESPONSE,
+                HttpServletResponse.class);
 
-        List<PerformableOperation> operationsToPerform = actionInvocationIncompleteResponse.getOperations();
+        List<PerformableOperation> operationsToPerform = responseContext.getActionInvocationResponse().getOperations();
         validateOperationForIncompleteStatus(operationsToPerform);
 
         String url = operationsToPerform.get(0).getUrl();
         try {
             response.sendRedirect(operationsToPerform.get(0).getUrl());
-            return new IncompleteStatus.Builder().responseContext(eventContext).build();
+            return new IncompleteStatus.Builder().responseContext(flowContext.getContextData()).build();
         } catch (IOException e) {
             throw new ActionExecutionResponseProcessorException(String.format(
                     "Error while redirecting to the URL: %s", url), e);
@@ -170,29 +170,32 @@ public class AuthenticationResponseProcessor implements ActionExecutionResponseP
     }
 
     @Override
-    public ActionExecutionStatus<Failure> processFailureResponse(Map<String, Object> eventContext,
-                                                      Event actionEvent,
-                                                      ActionInvocationFailureResponse failureResponse) throws
-            ActionExecutionResponseProcessorException {
+    public ActionExecutionStatus<Failure> processFailureResponse(FlowContext flowContext,
+            ActionExecutionResponseContext<ActionInvocationFailureResponse> responseContext)
+            throws ActionExecutionResponseProcessorException {
 
-        AuthenticationContext context = (AuthenticationContext) eventContext.get(
-                AuthenticatorAdapterConstants.AUTH_CONTEXT);
-        context.setProperty(FrameworkConstants.AUTH_ERROR_CODE, failureResponse.getFailureReason());
-        context.setProperty(FrameworkConstants.AUTH_ERROR_MSG, failureResponse.getFailureDescription());
+        AuthenticationContext context = flowContext.getValue(
+                AuthenticatorAdapterConstants.AUTH_CONTEXT, AuthenticationContext.class);
+        context.setProperty(FrameworkConstants.AUTH_ERROR_CODE,
+                responseContext.getActionInvocationResponse().getFailureReason());
+        context.setProperty(FrameworkConstants.AUTH_ERROR_MSG,
+                responseContext.getActionInvocationResponse().getFailureDescription());
 
-        return new FailedStatus(new Failure(failureResponse.getFailureReason(),
-                failureResponse.getFailureDescription()));
+        return new FailedStatus(new Failure(
+                responseContext.getActionInvocationResponse().getFailureReason(),
+                responseContext.getActionInvocationResponse().getFailureDescription()));
     }
 
     @Override
-    public ActionExecutionStatus<Error> processErrorResponse(Map<String, Object> eventContext,
-                                                             Event actionEvent,
-                                                             ActionInvocationErrorResponse errorResponse) throws
-            ActionExecutionResponseProcessorException {
+    public ActionExecutionStatus<Error> processErrorResponse(FlowContext flowContext,
+            ActionExecutionResponseContext<ActionInvocationErrorResponse> responseContext)
+            throws ActionExecutionResponseProcessorException {
 
         /*  We do not set the error code and error message from the authentication action response to the authentication
          context, as these are internal details for the client side. */
-        return new ErrorStatus(new Error(errorResponse.getErrorMessage(), errorResponse.getErrorDescription()));
+        return new ErrorStatus(new Error(
+                responseContext.getActionInvocationResponse().getErrorMessage(),
+                responseContext.getActionInvocationResponse().getErrorDescription()));
     }
 }
 

@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.util;
 
+import org.wso2.carbon.identity.action.execution.model.ActionExecutionResponseContext;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationErrorResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationFailureResponse;
 import org.wso2.carbon.identity.action.execution.model.ActionInvocationIncompleteResponse;
@@ -27,6 +28,7 @@ import org.wso2.carbon.identity.action.execution.model.PerformableOperation;
 import org.wso2.carbon.identity.action.execution.model.ResponseData;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticatedUserData;
+import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationRequestEvent;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticationAdapterConstants.AuthenticatingUserConstants;
 
 import java.util.ArrayList;
@@ -34,17 +36,20 @@ import java.util.List;
 
 public class TestActionInvocationResponseBuilder {
 
+    private static AuthenticationRequestEvent authenticationRequestEvent;
+
     /**
      * Build an action invocation error response.
      *
      * @return ActionInvocationResponse
      */
-    public static ActionInvocationErrorResponse buildActionInvocationErrorResponse() {
+    public static ActionExecutionResponseContext<ActionInvocationErrorResponse> buildActionInvocationErrorResponse() {
 
-        return new ActionInvocationErrorResponse.Builder()
+        return ActionExecutionResponseContext.create(authenticationRequestEvent,
+                new ActionInvocationErrorResponse.Builder()
                 .actionStatus(ActionInvocationResponse.Status.ERROR)
                 .errorMessage("error-1")
-                .errorDescription("error description").build();
+                .errorDescription("error description").build());
     }
 
     /**
@@ -52,12 +57,14 @@ public class TestActionInvocationResponseBuilder {
      *
      * @return ActionInvocationResponse
      */
-    public static ActionInvocationFailureResponse buildActionInvocationFailureResponse() {
+    public static ActionExecutionResponseContext<ActionInvocationFailureResponse>
+    buildActionInvocationFailureResponse() {
 
-        return new ActionInvocationFailureResponse.Builder()
+        return ActionExecutionResponseContext.create(authenticationRequestEvent,
+                new ActionInvocationFailureResponse.Builder()
                 .actionStatus(ActionInvocationResponse.Status.FAILED)
                 .failureReason("failure-1")
-                .failureDescription("failure description").build();
+                .failureDescription("failure description").build());
     }
 
     /**
@@ -65,14 +72,15 @@ public class TestActionInvocationResponseBuilder {
      *
      * @return ActionInvocationResponse
      */
-    public static ActionInvocationSuccessResponse buildAuthenticationSuccessResponse(
+    public static ActionExecutionResponseContext<ActionInvocationSuccessResponse> buildAuthenticationSuccessResponse(
             List<PerformableOperation> operations, ResponseData data) {
 
-        return new ActionInvocationSuccessResponse.Builder()
+        return ActionExecutionResponseContext.create(authenticationRequestEvent,
+                new ActionInvocationSuccessResponse.Builder()
                 .actionStatus(ActionInvocationResponse.Status.SUCCESS)
                 .operations(operations)
                 .responseData(data)
-                .build();
+                .build());
     }
 
     /**
@@ -80,13 +88,14 @@ public class TestActionInvocationResponseBuilder {
      *
      * @return ActionInvocationResponse
      */
-    public static ActionInvocationIncompleteResponse buildAuthenticationRedirectResponse(
-            List<PerformableOperation> operations) {
+    public static ActionExecutionResponseContext<ActionInvocationIncompleteResponse>
+    buildAuthenticationRedirectResponse(List<PerformableOperation> operations) {
 
-        return new ActionInvocationIncompleteResponse.Builder()
+        return ActionExecutionResponseContext.create(authenticationRequestEvent,
+                new ActionInvocationIncompleteResponse.Builder()
                 .actionStatus(ActionInvocationResponse.Status.INCOMPLETE)
                 .operations(operations)
-                .build();
+                .build());
     }
 
     public static class ExternallyAuthenticatedUser extends AuthenticatedUserData.User {
