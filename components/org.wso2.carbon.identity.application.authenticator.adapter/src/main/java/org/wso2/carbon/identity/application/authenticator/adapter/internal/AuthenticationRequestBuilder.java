@@ -23,10 +23,12 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.action.execution.ActionExecutionRequestBuilder;
 import org.wso2.carbon.identity.action.execution.exception.ActionExecutionRequestBuilderException;
 import org.wso2.carbon.identity.action.execution.model.ActionExecutionRequest;
+import org.wso2.carbon.identity.action.execution.model.ActionExecutionRequestContext;
 import org.wso2.carbon.identity.action.execution.model.ActionType;
 import org.wso2.carbon.identity.action.execution.model.AllowedOperation;
 import org.wso2.carbon.identity.action.execution.model.Application;
 import org.wso2.carbon.identity.action.execution.model.Event;
+import org.wso2.carbon.identity.action.execution.model.FlowContext;
 import org.wso2.carbon.identity.action.execution.model.Header;
 import org.wso2.carbon.identity.action.execution.model.Operation;
 import org.wso2.carbon.identity.action.execution.model.Organization;
@@ -51,7 +53,6 @@ import org.wso2.carbon.identity.organization.management.service.exception.Organi
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -70,12 +71,14 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
     }
 
     @Override
-    public ActionExecutionRequest buildActionExecutionRequest(Map<String, Object> eventContext)
+    public ActionExecutionRequest buildActionExecutionRequest(FlowContext flowContext,
+                                                              ActionExecutionRequestContext actionExecutionContext)
             throws ActionExecutionRequestBuilderException {
 
-        HttpServletRequest request = (HttpServletRequest) eventContext.get(AuthenticatorAdapterConstants.AUTH_REQUEST);
-        AuthenticationContext context = (AuthenticationContext) eventContext.get(
-                AuthenticatorAdapterConstants.AUTH_CONTEXT);
+        HttpServletRequest request = flowContext.getValue(
+                AuthenticatorAdapterConstants.AUTH_REQUEST, HttpServletRequest.class);
+        AuthenticationContext context = flowContext.getValue(
+                AuthenticatorAdapterConstants.AUTH_CONTEXT, AuthenticationContext.class);
 
         ActionExecutionRequest.Builder actionRequestBuilder = new ActionExecutionRequest.Builder();
         actionRequestBuilder.flowId(context.getContextIdentifier());
