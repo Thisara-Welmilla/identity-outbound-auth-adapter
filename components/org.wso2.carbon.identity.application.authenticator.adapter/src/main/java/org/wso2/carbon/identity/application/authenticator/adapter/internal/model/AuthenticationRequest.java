@@ -18,9 +18,9 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.internal.model;
 
-import org.wso2.carbon.identity.action.execution.model.Header;
-import org.wso2.carbon.identity.action.execution.model.Param;
-import org.wso2.carbon.identity.action.execution.model.Request;
+import org.wso2.carbon.identity.action.execution.api.model.Header;
+import org.wso2.carbon.identity.action.execution.api.model.Param;
+import org.wso2.carbon.identity.action.execution.api.model.Request;
 
 import java.util.List;
 

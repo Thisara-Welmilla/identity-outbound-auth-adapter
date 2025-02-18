@@ -19,7 +19,7 @@
 package org.wso2.carbon.identity.application.authenticator.adapter.internal.util;
 
 import org.apache.commons.lang.StringUtils;
-import org.wso2.carbon.identity.action.execution.ActionExecutionLogConstants;
+import org.wso2.carbon.identity.action.execution.api.constant.ActionExecutionLogConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationActionExecutionResult;
 import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.utils.DiagnosticLog;

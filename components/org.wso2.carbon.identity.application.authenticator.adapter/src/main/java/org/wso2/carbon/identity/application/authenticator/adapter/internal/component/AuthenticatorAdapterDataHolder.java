@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.internal.component;
 
-import org.wso2.carbon.identity.action.execution.ActionExecutorService;
+import org.wso2.carbon.identity.action.execution.api.service.ActionExecutorService;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.user.core.service.RealmService;
 

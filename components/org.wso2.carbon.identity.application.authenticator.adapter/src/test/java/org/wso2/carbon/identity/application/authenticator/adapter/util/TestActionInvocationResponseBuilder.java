@@ -18,14 +18,14 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.util;
 
-import org.wso2.carbon.identity.action.execution.model.ActionExecutionResponseContext;
-import org.wso2.carbon.identity.action.execution.model.ActionInvocationErrorResponse;
-import org.wso2.carbon.identity.action.execution.model.ActionInvocationFailureResponse;
-import org.wso2.carbon.identity.action.execution.model.ActionInvocationIncompleteResponse;
-import org.wso2.carbon.identity.action.execution.model.ActionInvocationResponse;
-import org.wso2.carbon.identity.action.execution.model.ActionInvocationSuccessResponse;
-import org.wso2.carbon.identity.action.execution.model.PerformableOperation;
-import org.wso2.carbon.identity.action.execution.model.ResponseData;
+import org.wso2.carbon.identity.action.execution.api.model.ActionExecutionResponseContext;
+import org.wso2.carbon.identity.action.execution.api.model.ActionInvocationErrorResponse;
+import org.wso2.carbon.identity.action.execution.api.model.ActionInvocationFailureResponse;
+import org.wso2.carbon.identity.action.execution.api.model.ActionInvocationIncompleteResponse;
+import org.wso2.carbon.identity.action.execution.api.model.ActionInvocationResponse;
+import org.wso2.carbon.identity.action.execution.api.model.ActionInvocationSuccessResponse;
+import org.wso2.carbon.identity.action.execution.api.model.PerformableOperation;
+import org.wso2.carbon.identity.action.execution.api.model.ResponseData;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticatedUserData;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationRequestEvent;

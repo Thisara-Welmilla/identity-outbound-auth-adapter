@@ -18,13 +18,13 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.internal.model;
 
-import org.wso2.carbon.identity.action.execution.model.Application;
-import org.wso2.carbon.identity.action.execution.model.Event;
-import org.wso2.carbon.identity.action.execution.model.Organization;
-import org.wso2.carbon.identity.action.execution.model.Request;
-import org.wso2.carbon.identity.action.execution.model.Tenant;
-import org.wso2.carbon.identity.action.execution.model.User;
-import org.wso2.carbon.identity.action.execution.model.UserStore;
+import org.wso2.carbon.identity.action.execution.api.model.Application;
+import org.wso2.carbon.identity.action.execution.api.model.Event;
+import org.wso2.carbon.identity.action.execution.api.model.Organization;
+import org.wso2.carbon.identity.action.execution.api.model.Request;
+import org.wso2.carbon.identity.action.execution.api.model.Tenant;
+import org.wso2.carbon.identity.action.execution.api.model.User;
+import org.wso2.carbon.identity.action.execution.api.model.UserStore;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
 
 /**
