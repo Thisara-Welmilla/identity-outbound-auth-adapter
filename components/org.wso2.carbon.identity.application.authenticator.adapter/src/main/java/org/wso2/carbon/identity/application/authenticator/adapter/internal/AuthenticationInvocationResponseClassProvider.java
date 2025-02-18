@@ -1,8 +1,8 @@
 package org.wso2.carbon.identity.application.authenticator.adapter.internal;
 
-import org.wso2.carbon.identity.action.execution.ActionInvocationResponseClassProvider;
-import org.wso2.carbon.identity.action.execution.model.ActionType;
-import org.wso2.carbon.identity.action.execution.model.ResponseData;
+import org.wso2.carbon.identity.action.execution.api.model.ActionType;
+import org.wso2.carbon.identity.action.execution.api.model.ResponseData;
+import org.wso2.carbon.identity.action.execution.api.service.ActionInvocationResponseClassProvider;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticatedUserData;
 
 /**

@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.util;
 
-import org.wso2.carbon.identity.action.execution.model.FlowContext;
+import org.wso2.carbon.identity.action.execution.api.model.FlowContext;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.SequenceConfig;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.StepConfig;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;

@@ -2,7 +2,7 @@ package org.wso2.carbon.identity.application.authenticator.adapter.internal.mode
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.wso2.carbon.identity.action.execution.model.ResponseData;
+import org.wso2.carbon.identity.action.execution.api.model.ResponseData;
 
 import java.util.List;
 
