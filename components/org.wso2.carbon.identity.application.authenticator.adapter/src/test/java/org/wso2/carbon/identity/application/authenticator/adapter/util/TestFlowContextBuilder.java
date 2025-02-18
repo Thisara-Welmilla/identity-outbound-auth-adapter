@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.util;
 
+import org.wso2.carbon.identity.action.execution.model.FlowContext;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.SequenceConfig;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.StepConfig;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
@@ -38,9 +39,9 @@ import javax.servlet.http.HttpServletResponse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TestEventContextBuilder {
+public class TestFlowContextBuilder {
 
-    Map<String, Object> eventContext = new HashMap<>();
+    FlowContext flowContext = FlowContext.create();
     public static final String SP_ID = "spId";
     public static final String SP_NAME = "spName";
     public static final String FLOW_ID = "flow-id";
@@ -53,35 +54,35 @@ public class TestEventContextBuilder {
      * @param headers           Headers.
      * @param parameters        Parameters.
      */
-    public Map<String, Object> buildEventContext(AuthenticatedUser authenticatedUser, String tenantDomain,
-                                   Map<String, String> headers, Map<String, String> parameters,
-                                   ArrayList<AuthHistory> authHistory) {
+    public FlowContext buildFlowContext(AuthenticatedUser authenticatedUser, String tenantDomain,
+                                        Map<String, String> headers, Map<String, String> parameters,
+                                        ArrayList<AuthHistory> authHistory) {
 
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, buildAuthenticationRequest(headers, parameters));
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, buildAuthenticationContext(authenticatedUser,
+        flowContext.add(AuthenticatorAdapterConstants.AUTH_REQUEST, buildAuthenticationRequest(headers, parameters));
+        flowContext.add(AuthenticatorAdapterConstants.AUTH_CONTEXT, buildAuthenticationContext(authenticatedUser,
                 tenantDomain, authHistory));
-        return eventContext;
+        return flowContext;
     }
 
-    public Map<String, Object> buildEventContext(HttpServletRequest request, HttpServletResponse response,
-                                                 AuthenticationContext context,
-                                                 AuthenticatorPropertyConstants.AuthenticationType authenticationType) {
+    public FlowContext buildFlowContext(HttpServletRequest request, HttpServletResponse response,
+                                        AuthenticationContext context,
+                                        AuthenticatorPropertyConstants.AuthenticationType authenticationType) {
 
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_RESPONSE, response);
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, context);
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_TYPE, authenticationType);
-        return eventContext;
+        flowContext.add(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
+        flowContext.add(AuthenticatorAdapterConstants.AUTH_RESPONSE, response);
+        flowContext.add(AuthenticatorAdapterConstants.AUTH_CONTEXT, context);
+        flowContext.add(AuthenticatorAdapterConstants.AUTH_TYPE, authenticationType);
+        return flowContext;
     }
 
     /**
-     * Get event context.
+     * Get flow context.
      *
-     * @return Event context.
+     * @return FlowContext.
      */
-    public Map<String, Object> getEventContext() {
+    public FlowContext getFlowContext() {
 
-        return eventContext;
+        return flowContext;
     }
 
     /**
@@ -91,7 +92,7 @@ public class TestEventContextBuilder {
      */
     public void setRequest(HttpServletRequest request) {
 
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
+        flowContext.add(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
     }
 
     /**
@@ -101,7 +102,7 @@ public class TestEventContextBuilder {
      */
     public void setAuthenticationContext(AuthenticationContext context) {
 
-        eventContext.put(AuthenticatorAdapterConstants.AUTH_CONTEXT, context);
+        flowContext.add(AuthenticatorAdapterConstants.AUTH_CONTEXT, context);
     }
 
     /**
@@ -111,7 +112,7 @@ public class TestEventContextBuilder {
      */
     public void setFlowId(String flowId) {
 
-        eventContext.put(AuthenticatorAdapterConstants.FLOW_ID, flowId);
+        flowContext.add(AuthenticatorAdapterConstants.FLOW_ID, flowId);
     }
 
     public static ArrayList<AuthHistory> buildAuthHistory() {

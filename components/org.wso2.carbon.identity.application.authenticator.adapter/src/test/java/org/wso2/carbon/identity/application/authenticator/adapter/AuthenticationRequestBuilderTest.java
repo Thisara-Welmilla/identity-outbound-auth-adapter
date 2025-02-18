@@ -30,6 +30,7 @@ import org.wso2.carbon.identity.action.execution.model.ActionType;
 import org.wso2.carbon.identity.action.execution.model.AllowedOperation;
 import org.wso2.carbon.identity.action.execution.model.Application;
 import org.wso2.carbon.identity.action.execution.model.Event;
+import org.wso2.carbon.identity.action.execution.model.FlowContext;
 import org.wso2.carbon.identity.action.execution.model.Header;
 import org.wso2.carbon.identity.action.execution.model.Operation;
 import org.wso2.carbon.identity.action.execution.model.Organization;
@@ -46,7 +47,7 @@ import org.wso2.carbon.identity.application.authenticator.adapter.internal.model
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationRequest;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationRequestEvent;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticatedTestUserBuilder;
-import org.wso2.carbon.identity.application.authenticator.adapter.util.TestEventContextBuilder;
+import org.wso2.carbon.identity.application.authenticator.adapter.util.TestFlowContextBuilder;
 import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
@@ -79,7 +80,7 @@ public class AuthenticationRequestBuilderTest {
     public void setUp() throws OrganizationManagementException {
 
         authenticationRequestBuilder = new AuthenticationRequestBuilder();
-        authHistory = TestEventContextBuilder.buildAuthHistory();
+        authHistory = TestFlowContextBuilder.buildAuthHistory();
 
         OrganizationManager organizationManager = mock(OrganizationManager.class);
         when(organizationManager.getOrganizationNameById(anyString())).thenReturn(AuthenticatedUserConstants.ORG_NAME);
@@ -107,41 +108,41 @@ public class AuthenticationRequestBuilderTest {
     }
 
     @DataProvider
-    public Object[][] eventContextDataProvider() throws UserIdNotFoundException {
+    public Object[][] flowContextDataProvider() throws UserIdNotFoundException {
 
         // Custom authenticator engaging in 1st step of authentication flow.
-        Map<String, Object> eventContextForNoUser = new TestEventContextBuilder().buildEventContext(
+        FlowContext flowContextForNoUser = new TestFlowContextBuilder().buildFlowContext(
                  null, SUPER_TENANT_DOMAIN_NAME, headers, parameters, new ArrayList<>());
         AuthenticationRequestEvent expectedEventForNoUser = getExpectedEvent(null);
 
         // Custom authenticator engaging in 2nd step of authentication flow with Local authenticated user.
         AuthenticatedUser localUser = TestAuthenticatedTestUserBuilder.createAuthenticatedUser(
                 AuthenticatedUserConstants.LOCAL_USER_PREFIX, SUPER_TENANT_DOMAIN_NAME);
-        Map<String, Object> eventContextForLocalUser = new TestEventContextBuilder().buildEventContext(
+        FlowContext flowContextForLocalUser = new TestFlowContextBuilder().buildFlowContext(
                 localUser, SUPER_TENANT_DOMAIN_NAME, headers, parameters, authHistory);
         AuthenticationRequestEvent expectedEventForLocalUser = getExpectedEvent(localUser);
 
         // Custom authenticator engaging in 2nd step of authentication flow with federated authenticated user.
         AuthenticatedUser fedUser = TestAuthenticatedTestUserBuilder.createAuthenticatedUser(
                 AuthenticatedUserConstants.LOCAL_USER_PREFIX, SUPER_TENANT_DOMAIN_NAME);
-        Map<String, Object> eventContextForFedUser = new TestEventContextBuilder().buildEventContext(
+        FlowContext flowContextForFedUser = new TestFlowContextBuilder().buildFlowContext(
                 fedUser, SUPER_TENANT_DOMAIN_NAME, headers, parameters, authHistory);
         AuthenticationRequestEvent expectedEventForFedUser = getExpectedEvent(fedUser);
 
         return new Object[][]{
-                {eventContextForNoUser, expectedEventForNoUser},
-                {eventContextForLocalUser, expectedEventForLocalUser},
-                {eventContextForFedUser, expectedEventForFedUser}};
+                {flowContextForNoUser, expectedEventForNoUser},
+                {flowContextForLocalUser, expectedEventForLocalUser},
+                {flowContextForFedUser, expectedEventForFedUser}};
     }
 
-    @Test(dataProvider = "eventContextDataProvider")
-    public void testBuildActionExecutionRequest(Map<String, Object> eventContext,
+    @Test(dataProvider = "flowContextDataProvider")
+    public void testBuildActionExecutionRequest(FlowContext flowContext,
             AuthenticationRequestEvent expectedEvent) throws ActionExecutionRequestBuilderException {
 
         ActionExecutionRequest actionExecutionRequest =
-                authenticationRequestBuilder.buildActionExecutionRequest(eventContext);
+                authenticationRequestBuilder.buildActionExecutionRequest(flowContext, null);
         Assert.assertNotNull(actionExecutionRequest);
-        Assert.assertEquals(actionExecutionRequest.getFlowId(), TestEventContextBuilder.FLOW_ID);
+        Assert.assertEquals(actionExecutionRequest.getFlowId(), TestFlowContextBuilder.FLOW_ID);
         Assert.assertEquals(actionExecutionRequest.getActionType(), ActionType.AUTHENTICATION);
         assertEvent(actionExecutionRequest.getEvent(), expectedEvent);
         assertAllowedOperations(actionExecutionRequest.getAllowedOperations());
@@ -199,7 +200,7 @@ public class AuthenticationRequestBuilderTest {
 
         AuthenticationRequestEvent.Builder eventBuilder = new AuthenticationRequestEvent.Builder();
         eventBuilder.tenant(new Tenant(String.valueOf(TENANT_ID_TEST), TENANT_DOMAIN_TEST));
-        eventBuilder.application(new Application(TestEventContextBuilder.SP_ID, TestEventContextBuilder.SP_NAME));
+        eventBuilder.application(new Application(TestFlowContextBuilder.SP_ID, TestFlowContextBuilder.SP_NAME));
         eventBuilder.organization(
                 new Organization(AuthenticatedUserConstants.ORG_ID, AuthenticatedUserConstants.ORG_NAME));
         List<Header> headers = new ArrayList<>();

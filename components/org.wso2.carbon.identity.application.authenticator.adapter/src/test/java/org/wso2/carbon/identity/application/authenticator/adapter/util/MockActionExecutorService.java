@@ -28,6 +28,7 @@ import org.wso2.carbon.identity.action.execution.model.ActionInvocationSuccessRe
 import org.wso2.carbon.identity.action.execution.model.Error;
 import org.wso2.carbon.identity.action.execution.model.Event;
 import org.wso2.carbon.identity.action.execution.model.Failure;
+import org.wso2.carbon.identity.action.execution.model.FlowContext;
 import org.wso2.carbon.identity.action.execution.model.Success;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.AuthenticationResponseProcessor;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.component.AuthenticatorAdapterDataHolder;
@@ -56,7 +57,7 @@ public class MockActionExecutorService {
             throws ActionExecutionException, ActionExecutionResponseProcessorException {
 
         ActionExecutorService actionExecutorService = mock(ActionExecutorService.class);
-        when(actionExecutorService.execute(any(), any(), any()))
+        when(actionExecutorService.execute(any(), any(FlowContext.class), any()))
                 .thenReturn(actionExecutionForAuthSuccess(eventContext, actionEvent, successResponse));
 
         AuthenticatorAdapterDataHolder.getInstance().setActionExecutorService(actionExecutorService);
@@ -83,7 +84,7 @@ public class MockActionExecutorService {
             throws ActionExecutionException, ActionExecutionResponseProcessorException {
 
         ActionExecutorService actionExecutorService = mock(ActionExecutorService.class);
-        when(actionExecutorService.execute(any(), any(), any()))
+        when(actionExecutorService.execute(any(), any(FlowContext.class), any()))
                 .thenReturn(actionExecutionForAuthFailure(eventContext, actionEvent, failureResponse));
 
         AuthenticatorAdapterDataHolder.getInstance().setActionExecutorService(actionExecutorService);
@@ -110,7 +111,7 @@ public class MockActionExecutorService {
             throws ActionExecutionException, ActionExecutionResponseProcessorException {
 
         ActionExecutorService actionExecutorService = mock(ActionExecutorService.class);
-        when(actionExecutorService.execute(any(), any(), any()))
+        when(actionExecutorService.execute(any(), any(FlowContext.class), any()))
                 .thenReturn(actionExecutionForAuthFailure(eventContext, actionEvent, errorResponse));
 
         AuthenticatorAdapterDataHolder.getInstance().setActionExecutorService(actionExecutorService);
