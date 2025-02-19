@@ -31,11 +31,8 @@ import org.wso2.carbon.identity.action.execution.api.model.AllowedOperation;
 import org.wso2.carbon.identity.action.execution.api.model.Application;
 import org.wso2.carbon.identity.action.execution.api.model.Event;
 import org.wso2.carbon.identity.action.execution.api.model.FlowContext;
-import org.wso2.carbon.identity.action.execution.api.model.Header;
 import org.wso2.carbon.identity.action.execution.api.model.Operation;
 import org.wso2.carbon.identity.action.execution.api.model.Organization;
-import org.wso2.carbon.identity.action.execution.api.model.Param;
-import org.wso2.carbon.identity.action.execution.api.model.Request;
 import org.wso2.carbon.identity.action.execution.api.model.Tenant;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
 import org.wso2.carbon.identity.application.authentication.framework.exception.UserIdNotFoundException;
@@ -44,7 +41,6 @@ import org.wso2.carbon.identity.application.authenticator.adapter.internal.Authe
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.component.AuthenticatorAdapterDataHolder;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticatingUser;
-import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationRequest;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationRequestEvent;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestAuthenticatedTestUserBuilder;
 import org.wso2.carbon.identity.application.authenticator.adapter.util.TestFlowContextBuilder;
@@ -153,7 +149,7 @@ public class AuthenticationRequestBuilderTest {
         Assert.assertTrue(actualEvent instanceof AuthenticationRequestEvent);
         AuthenticationRequestEvent actualAuthenticationEvent = (AuthenticationRequestEvent) actualEvent;
 
-        assertRequest(actualAuthenticationEvent.getRequest(), expectedEvent.getRequest());
+        Assert.assertNull(actualAuthenticationEvent.getRequest());
         Assert.assertEquals(actualAuthenticationEvent.getTenant().getId(), expectedEvent.getTenant().getId());
         Assert.assertEquals(actualAuthenticationEvent.getApplication().getId(), expectedEvent.getApplication().getId());
         Assert.assertEquals(actualAuthenticationEvent.getApplication().getName(),
@@ -181,15 +177,6 @@ public class AuthenticationRequestBuilderTest {
         Assert.assertEquals(actualAuthenticationEvent.getAuthenticatedSteps().length, authHistory.size());
     }
 
-    private static void assertRequest(Request actualRequest, Request expectedRequest) {
-
-        Assert.assertTrue(actualRequest instanceof AuthenticationRequest);
-        AuthenticationRequest actualAuthRequest = (AuthenticationRequest) actualRequest;
-
-        Assert.assertEquals(actualAuthRequest.getAdditionalHeaders().size(), 0);
-        Assert.assertEquals(actualAuthRequest.getAdditionalParams().size(), 0);
-    }
-
     private void assertAllowedOperations(List<AllowedOperation> allowedOperationList) {
 
         Assert.assertEquals(allowedOperationList.size(), 1);
@@ -203,11 +190,6 @@ public class AuthenticationRequestBuilderTest {
         eventBuilder.application(new Application(TestFlowContextBuilder.SP_ID, TestFlowContextBuilder.SP_NAME));
         eventBuilder.organization(
                 new Organization(AuthenticatedUserConstants.ORG_ID, AuthenticatedUserConstants.ORG_NAME));
-        List<Header> headers = new ArrayList<>();
-        this.headers.forEach((key, value) -> headers.add(new Header(key, new String[]{value})));
-        List<Param> params = new ArrayList<>();
-        this.parameters.forEach((key, value) -> params.add(new Param(key, new String[]{value})));
-        eventBuilder.request(new AuthenticationRequest(headers, params));
         if (user != null) {
             eventBuilder.user(createAuthenticatingUser(user));
         }

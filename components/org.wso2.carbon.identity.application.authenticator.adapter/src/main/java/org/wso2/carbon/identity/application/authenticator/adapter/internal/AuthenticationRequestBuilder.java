@@ -28,11 +28,8 @@ import org.wso2.carbon.identity.action.execution.api.model.AllowedOperation;
 import org.wso2.carbon.identity.action.execution.api.model.Application;
 import org.wso2.carbon.identity.action.execution.api.model.Event;
 import org.wso2.carbon.identity.action.execution.api.model.FlowContext;
-import org.wso2.carbon.identity.action.execution.api.model.Header;
 import org.wso2.carbon.identity.action.execution.api.model.Operation;
 import org.wso2.carbon.identity.action.execution.api.model.Organization;
-import org.wso2.carbon.identity.action.execution.api.model.Param;
-import org.wso2.carbon.identity.action.execution.api.model.Request;
 import org.wso2.carbon.identity.action.execution.api.model.Tenant;
 import org.wso2.carbon.identity.action.execution.api.model.User;
 import org.wso2.carbon.identity.action.execution.api.model.UserStore;
@@ -44,7 +41,6 @@ import org.wso2.carbon.identity.application.authentication.framework.model.Authe
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.component.AuthenticatorAdapterDataHolder;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticatingUser;
-import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationRequest;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationRequestEvent;
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationRequestEvent.AuthenticatedStep;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
@@ -53,8 +49,6 @@ import org.wso2.carbon.identity.organization.management.service.exception.Organi
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * This is a builder class which is responsible for building authentication request payload which will be sent to the
@@ -75,22 +69,19 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
                                                               ActionExecutionRequestContext actionExecutionContext)
             throws ActionExecutionRequestBuilderException {
 
-        HttpServletRequest request = flowContext.getValue(
-                AuthenticatorAdapterConstants.AUTH_REQUEST, HttpServletRequest.class);
         AuthenticationContext context = flowContext.getValue(
                 AuthenticatorAdapterConstants.AUTH_CONTEXT, AuthenticationContext.class);
 
         ActionExecutionRequest.Builder actionRequestBuilder = new ActionExecutionRequest.Builder();
         actionRequestBuilder.flowId(context.getContextIdentifier());
         actionRequestBuilder.actionType(getSupportedActionType());
-        actionRequestBuilder.event(getEvent(request, context));
+        actionRequestBuilder.event(getEvent(context));
         actionRequestBuilder.allowedOperations(getAllowedOperations());
 
         return actionRequestBuilder.build();
     }
 
-    private Event getEvent(HttpServletRequest request, AuthenticationContext context)
-            throws ActionExecutionRequestBuilderException {
+    private Event getEvent(AuthenticationContext context) throws ActionExecutionRequestBuilderException {
 
         AuthenticatedUser currentAuthenticatedUser = context.getSubject();
         String tenantDomain = context.getTenantDomain();
@@ -106,7 +97,6 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
                 context.getServiceProviderName()));
         eventBuilder.currentStepIndex(context.getCurrentStep());
         eventBuilder.authenticatedSteps(getAuthenticatedStepsForEventBuilder(context));
-        eventBuilder.request(getRequest(request));
         return eventBuilder.build();
     }
 
@@ -120,8 +110,7 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
         }
     }
 
-    private Organization getOrganizationForEventBuilder(AuthenticatedUser authenticatedUser)
-            throws ActionExecutionRequestBuilderException {
+    private Organization getOrganizationForEventBuilder(AuthenticatedUser authenticatedUser) {
 
         String organizationId = authenticatedUser.getUserResidentOrganization();
         try {
@@ -150,14 +139,6 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
         }
 
         return authenticatedSteps.toArray(new AuthenticatedStep[0]);
-    }
-
-    private Request getRequest(HttpServletRequest request) {
-
-        List<Header> additionalHeaders = new ArrayList<>();
-        List<Param> additionalParams = new ArrayList<>();
-
-        return new AuthenticationRequest(additionalHeaders, additionalParams);
     }
 
     private List<AllowedOperation> getAllowedOperations() {
