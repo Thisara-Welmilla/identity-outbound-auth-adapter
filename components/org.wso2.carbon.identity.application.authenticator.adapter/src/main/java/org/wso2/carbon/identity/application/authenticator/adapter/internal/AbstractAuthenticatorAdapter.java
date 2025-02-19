@@ -47,6 +47,8 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.RequestParams.IS_IDF_INITIATED_FROM_AUTHENTICATOR;
+
 /**
  * This class holds the external custom authentication.
  */
@@ -76,6 +78,13 @@ public abstract class AbstractAuthenticatorAdapter extends AbstractApplicationAu
             if (context.isLogoutRequest()) {
                 return AuthenticatorFlowStatus.SUCCESS_COMPLETED;
             }
+
+            /* When an identifier is initiated, the isIdfInitiatedFromAuthenticator property is set but never removed.
+             During login, if this property exists, the current authenticator is set to null, overriding any selection.
+             For custom authenticators, this causes unintended resets. To fix this, we remove the property in
+             handleRequestFlow, ensuring the correct authenticator persists.
+             */
+            context.removeProperty(IS_IDF_INITIATED_FROM_AUTHENTICATOR);
 
             FlowContext flowContext = FlowContext.create();
             flowContext.add(AuthenticatorAdapterConstants.AUTH_REQUEST, request);
