@@ -38,6 +38,8 @@ public class AuthenticatorAdapterConstants {
     public static final String FED_IDP = "FEDERATED";
     public static final String EXECUTION_STATUS_PROP_NAME = "actionExecutionStatus";
 
+    public static final String DEFAULT_USER_STORE_CONFIG_PATH = "Actions.Types.Authentication.DefaultUserStore";
+
     /**
      * User Type of the authenticated user communicated with the external authentication service.
      */
