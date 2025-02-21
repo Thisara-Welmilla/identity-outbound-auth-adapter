@@ -50,7 +50,6 @@ import static org.wso2.carbon.identity.application.authenticator.adapter.interna
 import static org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants.EXTERNAL_ID_CLAIM;
 import static org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants.GROUP_CLAIM;
 import static org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants.USERNAME_CLAIM;
-import static org.wso2.carbon.user.core.UserCoreConstants.DOMAIN_SEPARATOR;
 
 /**
  * This is responsible for building the authenticated user object from the authenticated user data.
@@ -113,7 +112,7 @@ public class AuthenticatedUserBuilder {
         User localUserFromUserStore = resolveLocalUserFromUserStore(userId, userStore);
 
         authenticatedUser = AuthenticatedUser.createLocalAuthenticatedUserFromSubjectIdentifier(
-                localUserFromUserStore.getUserStoreDomain() + DOMAIN_SEPARATOR + localUserFromUserStore.getUsername());
+                localUserFromUserStore.getFullQualifiedUsername());
         authenticatedUser.setUserAttributes(resolveUserNameAndClaimsFromResponse());
 
         Map<ClaimMapping, String> attributeMap = resolveUserNameAndClaimsFromResponse();
