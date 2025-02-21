@@ -33,6 +33,7 @@ import org.wso2.carbon.identity.application.authenticator.adapter.internal.model
 import org.wso2.carbon.identity.application.authenticator.adapter.internal.model.AuthenticationActionExecutionResult.Validity;
 import org.wso2.carbon.identity.application.common.model.Claim;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
+import org.wso2.carbon.identity.core.util.IdentityConfigParser;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.core.UserRealm;
@@ -45,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.LOCAL;
+import static org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants.DEFAULT_USER_STORE_CONFIG_PATH;
 import static org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants.EXTERNAL_ID_CLAIM;
 import static org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants.GROUP_CLAIM;
 import static org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants.USERNAME_CLAIM;
@@ -269,16 +271,18 @@ public class AuthenticatedUserBuilder {
             throws ActionExecutionResponseProcessorException {
 
         AbstractUserStoreManager userStoreManager;
+        String userStoreDomainName;
         try {
             RealmService realmService = AuthenticatorAdapterDataHolder.getInstance().getRealmService();
             int tenantId = IdentityTenantUtil.getTenantId(context.getTenantDomain());
             UserRealm userRealm = (UserRealm) realmService.getTenantUserRealm(tenantId);
             if (userStore != null && StringUtils.isNotBlank(userStore.getName())) {
-                userStoreManager = (AbstractUserStoreManager) userRealm.getUserStoreManager()
-                        .getSecondaryUserStoreManager(userStore.getName());
+                userStoreDomainName = userStore.getName();
             } else {
-                userStoreManager = (AbstractUserStoreManager) userRealm.getUserStoreManager();
+                userStoreDomainName = getDefaultUserStore();
             }
+            userStoreManager = (AbstractUserStoreManager) userRealm.getUserStoreManager()
+                    .getSecondaryUserStoreManager(userStoreDomainName);
         } catch (UserStoreException e) {
             if (userStore != null && StringUtils.isNotBlank(userStore.getName())) {
                 String errorMessage = "An error occurred while retrieving the userStore manager for the given " +
@@ -292,13 +296,17 @@ public class AuthenticatedUserBuilder {
                     "manager for the default userStore domain.", e);
         }
         if (userStoreManager == null) {
-            String errorMessage = "No userStore is found for the given userStore domain name: " +
-                    userStore.getName();
+            String errorMessage = "No userStore is found for the given userStore domain name: " + userStoreDomainName;
             DiagnosticLogger.logSuccessResponseDataValidationError(new AuthenticationActionExecutionResult("userStore",
                     Availability.AVAILABLE, Validity.INVALID, errorMessage));
             throw new ActionExecutionResponseProcessorException(errorMessage);
         }
 
         return userStoreManager;
+    }
+
+    private String getDefaultUserStore() {
+
+        return (String) IdentityConfigParser.getInstance().getConfiguration().get(DEFAULT_USER_STORE_CONFIG_PATH);
     }
 }

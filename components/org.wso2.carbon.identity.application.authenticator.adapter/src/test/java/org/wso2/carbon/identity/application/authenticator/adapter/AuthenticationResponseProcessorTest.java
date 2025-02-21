@@ -61,6 +61,7 @@ import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.IdentityProvider;
 import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants.AuthenticationType;
 import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
+import org.wso2.carbon.identity.core.util.IdentityConfigParser;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.user.core.UserRealm;
 import org.wso2.carbon.user.core.UserStoreManager;
@@ -86,6 +87,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.wso2.carbon.base.MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
+import static org.wso2.carbon.identity.application.authenticator.adapter.internal.constant.AuthenticatorAdapterConstants.DEFAULT_USER_STORE_CONFIG_PATH;
 
 public class AuthenticationResponseProcessorTest {
 
@@ -119,6 +121,8 @@ public class AuthenticationResponseProcessorTest {
     private AuthenticationResponseProcessor authenticationResponseProcessor;
     private MockedStatic<LoggerUtils> loggerUtils;
     private MockedStatic<FrameworkUtils> frameworkUtils;
+    private IdentityConfigParser mockIdentityConfigParser;
+    private MockedStatic<IdentityConfigParser> identityConfigParser;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -135,6 +139,7 @@ public class AuthenticationResponseProcessorTest {
     public void tearDown() {
 
         identityTenantUtilMockedStatic.close();
+        identityConfigParser.close();
     }
 
     @Test
@@ -223,7 +228,7 @@ public class AuthenticationResponseProcessorTest {
         authUser.setGroups(groups);
 
         // Valid user data with userId, userStore and userName claim.
-        ActionExecutionResponseContext<ActionInvocationSuccessResponse> authSuccessResponseWithAuthUser = 
+        ActionExecutionResponseContext<ActionInvocationSuccessResponse> authSuccessResponseWithAuthUser =
                 TestActionInvocationResponseBuilder.buildAuthenticationSuccessResponse(
                         new ArrayList<>(),
                         new AuthenticatedUserData(authUser));
@@ -233,7 +238,7 @@ public class AuthenticationResponseProcessorTest {
                 new ExternallyAuthenticatedUser();
         authUserNoUserName.getClaims().removeIf(
                 claim -> AuthenticatorAdapterConstants.USERNAME_CLAIM.equals(claim.getUri()));
-        ActionExecutionResponseContext<ActionInvocationSuccessResponse> authSuccessResponseWithoutUserName = 
+        ActionExecutionResponseContext<ActionInvocationSuccessResponse> authSuccessResponseWithoutUserName =
                 TestActionInvocationResponseBuilder.buildAuthenticationSuccessResponse(
                         new ArrayList<>(),
                         new AuthenticatedUserData(authUserNoUserName));
@@ -241,7 +246,7 @@ public class AuthenticationResponseProcessorTest {
         // Valid user data with userId, userStore and without userName claim.
         ExternallyAuthenticatedUser authUserNoUserStore = new ExternallyAuthenticatedUser();
         authUserNoUserStore.setUserStore(null);
-        ActionExecutionResponseContext<ActionInvocationSuccessResponse> authSuccessResponseWithoutUserStore = 
+        ActionExecutionResponseContext<ActionInvocationSuccessResponse> authSuccessResponseWithoutUserStore =
                 TestActionInvocationResponseBuilder.buildAuthenticationSuccessResponse(
                         new ArrayList<>(),
                         new AuthenticatedUserData(authUserNoUserStore));
@@ -294,10 +299,6 @@ public class AuthenticationResponseProcessorTest {
             ActionExecutionResponseContext<ActionInvocationSuccessResponse> actionInvocationSuccessResponse,
             AuthenticationType authType) throws Exception {
 
-        if (actionInvocationSuccessResponse.getActionInvocationResponse().getData() != null) {
-            mockUserStoreManager(((AuthenticatedUserData) actionInvocationSuccessResponse
-                    .getActionInvocationResponse().getData()).getUser().getUserStore());
-        }
         FlowContext flowContext = new TestFlowContextBuilder().buildFlowContext(
                 request, response, context, authType);
         when(mockedActionExecutorService.execute(any(), any(), any(FlowContext.class), any())).thenReturn(
@@ -386,10 +387,6 @@ public class AuthenticationResponseProcessorTest {
             ActionExecutionResponseContext<ActionInvocationSuccessResponse> actionInvocationSuccessResponse,
             String errorMessage) throws Exception {
 
-        if (actionInvocationSuccessResponse.getActionInvocationResponse().getData() != null) {
-            mockUserStoreManager(((AuthenticatedUserData) actionInvocationSuccessResponse
-                    .getActionInvocationResponse().getData()).getUser().getUserStore());
-        }
         FlowContext flowContext = new TestFlowContextBuilder().buildFlowContext(
                 request, response, context, AuthenticationType.IDENTIFICATION);
         when(mockedActionExecutorService.execute(any(), any(), any(FlowContext.class), any())).thenReturn(
@@ -590,9 +587,20 @@ public class AuthenticationResponseProcessorTest {
 
         frameworkUtils = mockStatic(FrameworkUtils.class);
         frameworkUtils.when(FrameworkUtils::getMultiAttributeSeparator).thenReturn(",");
+
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put(DEFAULT_USER_STORE_CONFIG_PATH, AuthenticatingUserConstants.USER_STORE_NAME);
+
+        mockIdentityConfigParser = mock(IdentityConfigParser.class);
+        identityConfigParser = mockStatic(IdentityConfigParser.class);
+        identityConfigParser.when(IdentityConfigParser::getInstance).thenReturn(mockIdentityConfigParser);
+        when(mockIdentityConfigParser.getConfiguration()).thenReturn(configMap);
+
+        when(mockedUserRealm.getUserStoreManager()).thenReturn(mockedUserStoreManager);
+        when(mockedUserStoreManager.getSecondaryUserStoreManager(anyString())).thenReturn(abstractUserStoreManager);
     }
 
-    private void createExpectedAuthenticatedUsers() {
+    private void createExpectedAuthenticatedUsers() throws Exception {
 
         groups.add("group-1");
         groups.add("group-2");
@@ -639,15 +647,5 @@ public class AuthenticationResponseProcessorTest {
         redirectOperation = new PerformableOperation();
         redirectOperation.setOp(Operation.REDIRECT);
         redirectOperation.setUrl("http://redirect.url");
-    }
-
-    private void mockUserStoreManager(AuthenticatedUserData.UserStore userStore) throws Exception {
-
-        if (userStore == null) {
-            when(mockedUserRealm.getUserStoreManager()).thenReturn(abstractUserStoreManager);
-        } else {
-            when(mockedUserRealm.getUserStoreManager()).thenReturn(mockedUserStoreManager);
-            when(mockedUserStoreManager.getSecondaryUserStoreManager(anyString())).thenReturn(abstractUserStoreManager);
-        }
     }
 }
