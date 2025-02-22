@@ -168,7 +168,7 @@ public class AuthenticationRequestBuilderTest {
         AuthenticatingUser actualAuthenticatingUser = (AuthenticatingUser) actualAuthenticationEvent.getUser();
         AuthenticatingUser expectedUser = (AuthenticatingUser) expectedEvent.getUser();
         Assert.assertEquals(actualAuthenticatingUser.getId(), expectedUser.getId());
-        Assert.assertEquals(actualAuthenticatingUser.getIdp(), expectedUser.getIdp());
+        Assert.assertEquals(actualAuthenticatingUser.getUserIdentitySource(), expectedUser.getUserIdentitySource());
         Assert.assertEquals(actualAuthenticatingUser.getSub(), expectedUser.getSub());
         Assert.assertEquals(actualAuthenticatingUser.getClaims().size(), expectedUser.getClaims().size());
         Assert.assertEquals(actualAuthenticationEvent.getOrganization().getId(), AuthenticatedUserConstants.ORG_ID);
@@ -201,9 +201,9 @@ public class AuthenticationRequestBuilderTest {
 
         AuthenticatingUser authenticatingUser = new AuthenticatingUser(user.getUserId());
         if (user.isFederatedUser()) {
-            authenticatingUser.setIdp(AuthenticatorAdapterConstants.FED_IDP);
+            authenticatingUser.setUserIdentitySource(AuthenticatorAdapterConstants.FED_IDP);
         } else {
-            authenticatingUser.setIdp(AuthenticatorAdapterConstants.LOCAL_IDP);
+            authenticatingUser.setUserIdentitySource(AuthenticatorAdapterConstants.LOCAL_IDP);
         }
         authenticatingUser.setSub(user.getAuthenticatedSubjectIdentifier());
         return authenticatingUser;
