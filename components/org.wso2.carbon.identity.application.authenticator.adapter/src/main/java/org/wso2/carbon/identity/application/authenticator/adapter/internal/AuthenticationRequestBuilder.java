@@ -89,7 +89,7 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
         AuthenticationRequestEvent.Builder eventBuilder = new AuthenticationRequestEvent.Builder();
         eventBuilder.tenant(new Tenant(String.valueOf(IdentityTenantUtil.getTenantId(tenantDomain)), tenantDomain));
         if (currentAuthenticatedUser != null) {
-            eventBuilder.user(getUserForEventBuilder(currentAuthenticatedUser));
+            eventBuilder.user(getUserForEventBuilder(currentAuthenticatedUser, tenantDomain));
             eventBuilder.organization(getOrganizationForEventBuilder(currentAuthenticatedUser));
             eventBuilder.userStore(new UserStore(currentAuthenticatedUser.getUserStoreDomain()));
         }
@@ -100,11 +100,11 @@ public class AuthenticationRequestBuilder implements ActionExecutionRequestBuild
         return eventBuilder.build();
     }
 
-    private User getUserForEventBuilder(AuthenticatedUser authenticatedUser)
+    private User getUserForEventBuilder(AuthenticatedUser authenticatedUser, String tenantDomain)
             throws ActionExecutionRequestBuilderException {
 
         try {
-            return new AuthenticatingUser(authenticatedUser.getUserId(), authenticatedUser);
+            return new AuthenticatingUser(authenticatedUser.getUserId(), authenticatedUser, tenantDomain);
         } catch (UserIdNotFoundException e) {
             throw new ActionExecutionRequestBuilderException("User ID not found for current authenticated user.", e);
         }

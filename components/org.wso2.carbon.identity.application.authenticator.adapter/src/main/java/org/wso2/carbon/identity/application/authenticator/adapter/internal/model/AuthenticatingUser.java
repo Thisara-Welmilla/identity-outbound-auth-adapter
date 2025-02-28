@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.identity.application.authenticator.adapter.internal.model;
 
+import org.apache.commons.lang.StringUtils;
 import org.wso2.carbon.identity.action.execution.api.model.User;
 import org.wso2.carbon.identity.action.execution.api.model.UserClaim;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
@@ -41,9 +42,9 @@ public class AuthenticatingUser extends User {
         super(id);
     }
 
-    public AuthenticatingUser(String id, AuthenticatedUser user) {
+    public AuthenticatingUser(String id, AuthenticatedUser user, String tenantDomain) {
         super(id);
-        sub = user.getAuthenticatedSubjectIdentifier();
+        sub = StringUtils.replace(user.getAuthenticatedSubjectIdentifier(), "@" + tenantDomain, StringUtils.EMPTY);
         userIdentitySource = user.isFederatedUser() ?
                 AuthenticatorAdapterConstants.FED_IDP : AuthenticatorAdapterConstants.LOCAL_IDP;
 
